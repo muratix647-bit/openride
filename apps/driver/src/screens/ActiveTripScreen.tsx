@@ -36,6 +36,21 @@ export function ActiveTripScreen({ trip, onEvent }: Props) {
     await Linking.openURL(url);
   }
 
+  async function callCustomer(): Promise<void> {
+    const phone = trip.customer_phone?.trim();
+    if (!phone) {
+      Alert.alert('Telefonnummer saknas', 'Kunden har inget telefonnummer registrerat.');
+      return;
+    }
+    const url = `tel:${phone.replace(/\s+/g, '')}`;
+    const supported = await Linking.canOpenURL(url);
+    if (!supported) {
+      Alert.alert('Kunde inte ringa', 'Telefonen kan inte öppna samtalsfunktionen.');
+      return;
+    }
+    await Linking.openURL(url);
+  }
+
   async function run(event: Event): Promise<void> {
     setBusy(true);
     try {
@@ -62,6 +77,12 @@ export function ActiveTripScreen({ trip, onEvent }: Props) {
         <Text style={styles.value}>{trip.dropoff_address}</Text>
         {fareCents != null ? <Text style={styles.fare}>{formatMoney(fareCents)}</Text> : null}
       </View>
+
+      {trip.customer_phone ? (
+        <Pressable style={styles.callButton} onPress={() => void callCustomer()}>
+          <Text style={styles.callText}>Ring kund</Text>
+        </Pressable>
+      ) : null}
 
       <Pressable style={styles.navButton} onPress={() => void navigateTo(target)}>
         <Text style={styles.navText}>Navigera till {inProgress ? 'destination' : 'kund'}</Text>
@@ -105,6 +126,8 @@ const styles = StyleSheet.create({
   label: { fontSize: typography.size.sm, color: colors.textMuted },
   value: { fontSize: typography.size.md, fontWeight: '600' },
   fare: { fontSize: typography.size.xl, fontWeight: '700', color: colors.brand, marginTop: spacing.md },
+  callButton: { borderWidth: 1, borderColor: colors.brand, borderRadius: 8, padding: spacing.md, alignItems: 'center', marginBottom: spacing.sm },
+  callText: { color: colors.brand, fontWeight: '600', fontSize: typography.size.md },
   navButton: { borderWidth: 1, borderColor: colors.brandDark, borderRadius: 8, padding: spacing.md, alignItems: 'center', marginBottom: spacing.lg },
   navText: { color: colors.brandDark, fontWeight: '600', fontSize: typography.size.md },
   actions: { marginTop: 'auto', gap: spacing.sm },
