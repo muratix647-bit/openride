@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Text } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActiveTripScreen } from './src/screens/ActiveTripScreen';
@@ -37,12 +37,12 @@ function SignedIn({ session }: { session: Session }) {
     return <ReportIncidentScreen onDone={() => setShowReport(false)} />;
   }
 
-  // Active trip takes precedence, then a pending offer, then the home/idle view.
+  // Active trip takes precedence over the home/idle view.
   if (state.activeTrip) {
     return (
       <ActiveTripScreen
         trip={state.activeTrip}
-        onEvent={async (event, reason) => {
+        onEvent={async (event) => {
           await state.tripEvent(event);
         }}
       />
@@ -50,10 +50,19 @@ function SignedIn({ session }: { session: Session }) {
   }
 
 
+  if (!state.driverId) {
+    return (
+      <Centered>
+        <Text style={{ textAlign: 'center', paddingHorizontal: 24 }}>
+          Förarkontot är inte kopplat till Avenyn Taxi. Kontakta Dispatch.
+        </Text>
+      </Centered>
+    );
+  }
 
   return (
     <HomeScreen
-      driverId={state.driverId ?? session.user.id}
+      driverId={state.driverId}
       displayName={displayName}
       online={state.online}
       onGoOnline={state.goOnline}
