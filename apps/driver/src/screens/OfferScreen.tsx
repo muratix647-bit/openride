@@ -7,11 +7,11 @@ import type { PendingOffer } from '../lib/driver-state';
 
 interface Props {
   offer: PendingOffer;
-  onAcceptera: (tripId: string) => Promise<void>;
-  onAvböj: (tripId: string) => Promise<void>;
+  onAccept: (tripId: string) => Promise<void>;
+  onDecline: (tripId: string) => Promise<void>;
 }
 
-export function OfferScreen({ offer, onAcceptera, onAvböj }: Props) {
+export function OfferScreen({ offer, onAccept, onDecline }: Props) {
   const [remaining, setRemaining] = useState(() => secsUntil(offer.responds_by));
   const [busy, setBusy] = useState(false);
   const expiredHandled = useRef(false);
@@ -29,9 +29,9 @@ export function OfferScreen({ offer, onAcceptera, onAvböj }: Props) {
   useEffect(() => {
     if (expired && !expiredHandled.current && !busy) {
       expiredHandled.current = true;
-      void onAvböj(offer.trip_id).catch(() => {});
+      void onDecline(offer.trip_id).catch(() => {});
     }
-  }, [expired, busy, offer.trip_id, onAvböj]);
+  }, [expired, busy, offer.trip_id, onDecline]);
 
   async function act(fn: (id: string) => Promise<void>, label: string): Promise<void> {
     setBusy(true);
@@ -67,14 +67,14 @@ export function OfferScreen({ offer, onAcceptera, onAvböj }: Props) {
       <View style={styles.actions}>
         <Pressable
           style={[styles.button, styles.decline]}
-          onPress={() => act(onAvböj, 'decline')}
+          onPress={() => act(onDecline, 'decline')}
           disabled={busy}
         >
           <Text style={styles.buttonText}>Avböj</Text>
         </Pressable>
         <Pressable
           style={[styles.button, styles.accept, (expired || busy) && styles.disabled]}
-          onPress={() => act(onAcceptera, 'accept')}
+          onPress={() => act(onAccept, 'accept')}
           disabled={expired || busy}
         >
           {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Acceptera</Text>}
