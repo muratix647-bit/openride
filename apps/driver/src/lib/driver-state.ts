@@ -47,7 +47,8 @@ export interface DriverState {
 }
 
 export function useDriverState(session: Session | null): DriverState {
-  const driverId = session?.user.id ?? null;
+  const authUserId = session?.user.id ?? null;
+  const [driverId, setDriverId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [online, setOnline] = useState(false);
   const [vehicleId, setVehicleId] = useState<string | null>(null);
@@ -55,18 +56,22 @@ export function useDriverState(session: Session | null): DriverState {
   const [pendingOffer, setPendingOffer] = useState<PendingOffer | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!driverId) return;
+    if (!authUserId) return;
+    const { data: linkedDriver } = await supabase.from('drivers').select('id').eq('auth_user_id', authUserId).maybeSingle();
+    const resolvedDriverId = (linkedDriver as { id?: string } | null)?.id ?? null;
+    setDriverId(resolvedDriverId);
+    if (!resolvedDriverId) { setOnline(false); setActiveTrip(null); setLoading(false); return; }
     const nowIso = new Date().toISOString();
     const [statusRes, tripRes, offerRes] = await Promise.all([
       supabase
         .from('drivers')
         .select('id, is_online, status')
-        .eq('auth_user_id', driverId)
+        .eq('id', resolvedDriverId)
         .maybeSingle(),
       supabase
         .from('bookings')
         .select('id, status, pickup_address, dropoff_address, estimated_price, fixed_price, actual_price')
-        .eq('driver_id', driverId)
+        .eq('driver_id', resolvedDriverId)
         .in('status', ['Tilldelad', 'På väg', 'Framme', 'Kund i bilen'])
         .order('updated_at', { ascending: false })
         .limit(1)
@@ -96,13 +101,13 @@ export function useDriverState(session: Session | null): DriverState {
     } : null);
     setPendingOffer((offerRes.data as unknown as PendingOffer) ?? null);
     setLoading(false);
-  }, [driverId]);
+  }, [authUserId]);
 
   // Initial load + realtime subscription on the driver's own rows.
   useEffect(() => {
-    if (!driverId) return;
+    if (!authUserId) return;
     void refresh();
-    const channel = supabase.channel(channels.driver(driverId));
+    const channel = supabase.channel(channels.driver(authUserId));
     for (const table of ['drivers', 'bookings']) {
       channel.on(
         'postgres_changes',
@@ -114,7 +119,7 @@ export function useDriverState(session: Session | null): DriverState {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [driverId, refresh]);
+  }, [authUserId, refresh]);
 
   // Stream location while online; stop when offline or signed out.
   useEffect(() => {
@@ -147,6 +152,7 @@ export function useDriverState(session: Session | null): DriverState {
     if (event === 'start') patch.picked_up_at = new Date().toISOString();
     if (event === 'complete') patch.completed_at = new Date().toISOString();
     if (event === 'cancel') patch.cancelled_at = new Date().toISOString();
+    if (!driverId) throw new Error('Förarkontot är inte kopplat.');
     const { error } = await supabase.from('bookings').update(patch).eq('id', activeTrip.id).eq('driver_id', driverId);
     if (error) throw error;
     await refresh();
