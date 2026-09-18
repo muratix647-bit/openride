@@ -69,7 +69,7 @@ export function useDriverState(session: Session | null): DriverState {
         .from('bookings')
         .select('id, status, pickup_address, dropoff_address, customer_phone, estimated_price, fixed_price, actual_price')
         .eq('driver_id', resolvedDriverId)
-        .in('status', ['Tilldelad', 'På väg', 'Framme', 'Kund i bilen'])
+        .in('status', ['Tilldelad', 'På väg', 'arrived', 'Hämtad'])
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -81,7 +81,7 @@ export function useDriverState(session: Session | null): DriverState {
     const b = tripRes.data as any;
     setActiveTrip(b ? {
       id: b.id,
-      status: b.status === 'Tilldelad' ? 'assigned' : b.status === 'På väg' ? 'driver_en_route' : b.status === 'Framme' ? 'arrived_at_pickup' : 'in_progress',
+      status: b.status === 'Tilldelad' ? 'assigned' : b.status === 'På väg' ? 'driver_en_route' : b.status === 'arrived' ? 'arrived_at_pickup' : 'in_progress',
       pickup_address: b.pickup_address,
       dropoff_address: b.dropoff_address,
       customer_phone: b.customer_phone ?? null,
@@ -135,7 +135,7 @@ export function useDriverState(session: Session | null): DriverState {
 
   const tripEvent = useCallback(async (event: 'en-route' | 'arrived' | 'start' | 'complete' | 'cancel') => {
     if (!activeTrip) return;
-    const next = event === 'en-route' ? 'På väg' : event === 'arrived' ? 'Framme' : event === 'start' ? 'Kund i bilen' : event === 'complete' ? 'Slutförd' : 'Avbokad';
+    const next = event === 'en-route' ? 'På väg' : event === 'arrived' ? 'arrived' : event === 'start' ? 'Hämtad' : event === 'complete' ? 'Slutförd' : 'Avbokad';
     const patch: Record<string, unknown> = { status: next, updated_at: new Date().toISOString() };
     if (event === 'start') patch.picked_up_at = new Date().toISOString();
     if (event === 'complete') patch.completed_at = new Date().toISOString();
