@@ -1,12 +1,12 @@
 import { getSupabaseServer } from '@/lib/supabase-server';
 
-export default async function ÖversiktPage() {
+export default async function DashboardPage() {
   const supabase = await getSupabaseServer();
 
   const [{ count: driverCount }, { count: vehicleCount }, { count: tripCount }] = await Promise.all([
-    supabase.from('driver_profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('drivers').select('*', { count: 'exact', head: true }),
     supabase.from('vehicles').select('*', { count: 'exact', head: true }),
-    supabase.from('trips').select('*', { count: 'exact', head: true }),
+    supabase.from('bookings').select('*', { count: 'exact', head: true }),
   ]);
 
   const kpis = [
