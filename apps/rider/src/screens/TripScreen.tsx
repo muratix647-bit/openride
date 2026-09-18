@@ -14,25 +14,24 @@ interface TripRow {
   status: string;
   pickup_address: string;
   dropoff_address: string;
-  estimated_fare_cents: number | null;
-  final_fare_cents: number | null;
+  estimated_price: number | null;
+  fixed_price: number | null;
+  actual_price: number | null;
   driver_id: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  scheduled: 'Förbokad',
-  requested: 'Söker efter en förare…',
-  requires_manual_dispatch: 'Söker efter en förare…',
-  assigned: 'Förare tilldelad',
-  driver_en_route: 'Föraren är på väg',
-  arrived_at_pickup: 'Din förare är framme',
-  in_progress: 'Resan pågår',
-  completed: 'Resan är avslutad',
-  cancelled: 'Resan är avbokad',
-  no_show: 'Kunden kom inte',
+  'Ny': 'Söker efter en förare…',
+  'Bekräftad': 'Bokningen är bekräftad',
+  'Tilldelad': 'Förare tilldelad',
+  'På väg': 'Föraren är på väg',
+  'Framme': 'Din förare är framme',
+  'Kund i bilen': 'Resan pågår',
+  'Avslutad': 'Resan är avslutad',
+  'Avbokad': 'Resan är avbokad',
 };
 
-const ACTIVE = new Set(['requested', 'requires_manual_dispatch', 'scheduled', 'assigned', 'driver_en_route', 'arrived_at_pickup', 'in_progress']);
+const ACTIVE = new Set(['Ny', 'Bekräftad', 'Tilldelad', 'På väg', 'Framme', 'Kund i bilen']);
 
 export function TripScreen({ route }: Props) {
   const { tripId } = route.params;
@@ -43,8 +42,8 @@ export function TripScreen({ route }: Props) {
     let active = true;
 
     void supabase
-      .from('trips')
-      .select('id, status, pickup_address, dropoff_address, estimated_fare_cents, final_fare_cents, driver_id')
+      .from('bookings')
+      .select('id, status, pickup_address, dropoff_address, estimated_price, fixed_price, actual_price, driver_id')
       .eq('id', tripId)
       .maybeSingle()
       .then(({ data }) => {
@@ -58,7 +57,7 @@ export function TripScreen({ route }: Props) {
       .channel(channels.trip(tripId))
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` },
+        { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `id=eq.${tripId}` },
         (payload) => setTrip((prev) => ({ ...(prev ?? {}), ...(payload.new as TripRow) })),
       )
       .subscribe();
@@ -85,12 +84,12 @@ export function TripScreen({ route }: Props) {
   }
 
   const isActive = ACTIVE.has(trip.status);
-  const fareCents = trip.final_fare_cents ?? trip.estimated_fare_cents;
+  const fare = trip.actual_price ?? trip.fixed_price ?? trip.estimated_price;
 
   return (
     <View style={styles.container}>
       <View style={[styles.statusBox, isActive ? styles.statusActive : styles.statusDone]}>
-        {isActive && trip.status !== 'arrived_at_pickup' ? (
+        {isActive && trip.status !== 'Framme' ? (
           <ActivityIndicator color="#fff" style={{ marginBottom: spacing.sm }} />
         ) : null}
         <Text style={styles.statusText}>{STATUS_LABEL[trip.status] ?? trip.status}</Text>
@@ -111,10 +110,10 @@ export function TripScreen({ route }: Props) {
         </View>
       </View>
 
-      {fareCents != null ? (
+      {fare != null ? (
         <View style={styles.fareRow}>
-          <Text style={styles.label}>{trip.final_fare_cents != null ? 'Pris' : 'Beräknat pris'}</Text>
-          <Text style={styles.fare}>{formatMoney(fareCents)}</Text>
+          <Text style={styles.label}>{trip.actual_price != null ? 'Pris' : 'Beräknat pris'}</Text>
+          <Text style={styles.fare}>{`${fare} kr`}</Text>
         </View>
       ) : null}
 
