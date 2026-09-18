@@ -41,14 +41,13 @@ const STATUS_LABEL: Record<string, string> = {
   'Bekräftad': 'Bokningen är bekräftad',
   'Tilldelad': 'Förare tilldelad',
   'På väg': 'Föraren är på väg',
-  'Framme': 'Din förare är framme',
-  'Kund i bilen': 'Resan pågår',
+  'arrived': 'Din förare är framme',
   'Slutförd': 'Resan är avslutad',
   'Hämtad': 'Resan pågår',
   'Avbokad': 'Resan är avbokad',
 };
 
-const ACTIVE = new Set(['Ny', 'Bekräftad', 'Tilldelad', 'På väg', 'Framme', 'Kund i bilen']);
+const ACTIVE = new Set(['Ny', 'Bekräftad', 'Tilldelad', 'På väg', 'arrived', 'Hämtad']);
 
 export function TripScreen({ route }: Props) {
   const { tripId } = route.params;
@@ -160,7 +159,7 @@ export function TripScreen({ route }: Props) {
         <Text style={styles.bookingNumber}>Bokning #{trip.booking_number}</Text>
       ) : null}
       <View style={[styles.statusBox, isActive ? styles.statusActive : styles.statusDone]}>
-        {isActive && trip.status !== 'Framme' ? (
+        {isActive && trip.status !== 'arrived' ? (
           <ActivityIndicator color="#fff" style={{ marginBottom: spacing.sm }} />
         ) : null}
         <Text style={styles.statusText}>{STATUS_LABEL[trip.status] ?? trip.status}</Text>
