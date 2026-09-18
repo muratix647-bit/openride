@@ -16,7 +16,7 @@ const nav = [
   { href: '/audit', label: 'Aktivitetslogg' },
 ];
 
-export default async function ÖversiktLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
