@@ -26,6 +26,7 @@ interface AssignedDriver {
 
 interface TripRow {
   id: string;
+  booking_number: number | null;
   status: string;
   pickup_address: string;
   dropoff_address: string | null;
@@ -61,7 +62,7 @@ export function TripScreen({ route }: Props) {
 
     void supabase
       .from('bookings')
-      .select('id, status, pickup_address, dropoff_address, estimated_price, fixed_price, actual_price, driver_id')
+      .select('id, booking_number, status, pickup_address, dropoff_address, estimated_price, fixed_price, actual_price, driver_id')
       .eq('id', tripId)
       .maybeSingle()
       .then(({ data }) => {
@@ -155,6 +156,9 @@ export function TripScreen({ route }: Props) {
 
   return (
     <View style={styles.container}>
+      {trip.booking_number != null ? (
+        <Text style={styles.bookingNumber}>Bokning #{trip.booking_number}</Text>
+      ) : null}
       <View style={[styles.statusBox, isActive ? styles.statusActive : styles.statusDone]}>
         {isActive && trip.status !== 'Framme' ? (
           <ActivityIndicator color="#fff" style={{ marginBottom: spacing.sm }} />
@@ -228,6 +232,7 @@ export function TripScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.xl, backgroundColor: colors.surface },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface },
+  bookingNumber: { fontSize: typography.size.md, fontWeight: '700', marginBottom: spacing.sm, color: colors.text },
   statusBox: { borderRadius: 12, padding: spacing.xl, alignItems: 'center', marginBottom: spacing.xl },
   statusActive: { backgroundColor: colors.brand },
   statusDone: { backgroundColor: colors.success },
