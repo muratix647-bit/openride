@@ -1,5 +1,5 @@
 import { channels } from '@openride/realtime';
-import { colors, formatMoney, spacing, typography } from '@openride/ui';
+import { colors, spacing, typography } from '@openride/ui';
 import type { RouteProp } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
