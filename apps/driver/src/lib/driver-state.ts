@@ -32,8 +32,6 @@ export interface PendingOffer {
   trips: { pickup_address: string; dropoff_address: string; estimated_fare_cents: number | null } | null;
 }
 
-const ACTIVE_STATUSES = ['assigned', 'driver_en_route', 'arrived_at_pickup', 'in_progress'] as const;
-
 export interface DriverState {
   loading: boolean;
   online: boolean;
@@ -62,8 +60,7 @@ export function useDriverState(session: Session | null): DriverState {
     const resolvedDriverId = (linkedDriver as { id?: string } | null)?.id ?? null;
     setDriverId(resolvedDriverId);
     if (!resolvedDriverId) { setOnline(false); setActiveTrip(null); setLoading(false); return; }
-    const nowIso = new Date().toISOString();
-    const [statusRes, tripRes, offerRes] = await Promise.all([
+    const [statusRes, tripRes] = await Promise.all([
       supabase
         .from('drivers')
         .select('id, is_online, status')
@@ -92,7 +89,7 @@ export function useDriverState(session: Session | null): DriverState {
       estimated_fare_cents: b.fixed_price != null ? Math.round(Number(b.fixed_price) * 100) : b.estimated_price != null ? Math.round(Number(b.estimated_price) * 100) : null,
       final_fare_cents: b.actual_price != null ? Math.round(Number(b.actual_price) * 100) : null,
     } : null);
-    setPendingOffer((offerRes.data as unknown as PendingOffer) ?? null);
+    setPendingOffer(null);
     setLoading(false);
   }, [authUserId]);
 
