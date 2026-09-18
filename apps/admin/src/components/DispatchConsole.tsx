@@ -12,7 +12,7 @@ interface DriverRow {
   id: string; full_name: string; phone: string | null; registration_number: string | null;
   is_online: boolean; status: string | null;
 }
-const ACTIVE = ['Ny','Bekräftad','Tilldelad','På väg','Framme','Kund i bilen'];
+const ACTIVE = ['Ny','Bekräftad','Tilldelad','På väg','arrived','Hämtad'];
 
 export function DispatchConsole() {
   const supabase = useMemo(() => getSupabaseBrowser(), []);
