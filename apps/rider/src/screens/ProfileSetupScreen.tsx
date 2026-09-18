@@ -15,7 +15,7 @@ export function ProfileSetupScreen({ onDone }: { onDone: () => void }) {
       await completeProfile(name, email);
       onDone();
     } catch (e) {
-      Alert.alert('Could not save profile', (e as Error).message);
+      Alert.alert('Kunde inte spara profilen', (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -23,12 +23,12 @@ export function ProfileSetupScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome 👋</Text>
-      <Text style={styles.subtitle}>Tell us your name so drivers know who to pick up.</Text>
+      <Text style={styles.title}>Välkommen 👋</Text>
+      <Text style={styles.subtitle}>Ange ditt namn så att föraren vet vem som ska hämtas.</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="First name"
+        placeholder="Förnamn"
         value={name}
         onChangeText={setName}
         editable={!busy}
@@ -36,7 +36,7 @@ export function ProfileSetupScreen({ onDone }: { onDone: () => void }) {
       />
       <TextInput
         style={styles.input}
-        placeholder="Email (optional)"
+        placeholder="E-post (valfritt)"
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
@@ -44,7 +44,7 @@ export function ProfileSetupScreen({ onDone }: { onDone: () => void }) {
         editable={!busy}
       />
       <Pressable style={styles.button} onPress={onSave} disabled={busy || name.trim().length < 1}>
-        <Text style={styles.buttonText}>{busy ? 'Saving…' : 'Continue'}</Text>
+        <Text style={styles.buttonText}>{busy ? 'Sparar…' : 'Fortsätt'}</Text>
       </Pressable>
     </View>
   );
