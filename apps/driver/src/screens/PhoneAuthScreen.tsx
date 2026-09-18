@@ -23,7 +23,7 @@ export function PhoneAuthScreen() {
     }
   }
 
-  async function onVerifiera(): Promise<void> {
+  async function onVerify(): Promise<void> {
     setBusy(true);
     try {
       await verifyOtp(phone.trim(), code.trim());
@@ -67,7 +67,7 @@ export function PhoneAuthScreen() {
             maxLength={6}
           />
           <Pressable style={styles.button} onPress={onVerify} disabled={busy || code.length < 4}>
-            <Text style={styles.buttonText}>Verify</Text>
+            <Text style={styles.buttonText}>Verifiera</Text>
           </Pressable>
           <Pressable onPress={() => setStage('phone')} disabled={busy}>
             <Text style={styles.link}>Använd ett annat nummer</Text>
