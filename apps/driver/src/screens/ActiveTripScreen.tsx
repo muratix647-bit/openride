@@ -13,10 +13,10 @@ interface Props {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  assigned: 'Head to pickup',
-  driver_en_route: 'Heading to pickup',
-  arrived_at_pickup: 'At pickup',
-  in_progress: 'Trip in progress',
+  assigned: 'Kör till kunden',
+  driver_en_route: 'På väg till kunden',
+  arrived_at_kund: 'Framme hos kunden',
+  in_progress: 'Kund i bilen',
 };
 
 export function ActiveTripScreen({ trip, onEvent }: Props) {
@@ -32,14 +32,14 @@ export function ActiveTripScreen({ trip, onEvent }: Props) {
     try {
       await onEvent(event);
     } catch (e) {
-      Alert.alert('Action failed', (e as Error).message);
+      Alert.alert('Åtgärden misslyckades', (e as Error).message);
     } finally {
       setBusy(false);
     }
   }
 
   const inProgress = trip.status === 'in_progress';
-  const target = inProgress ? trip.dropoff_address : trip.pickup_address;
+  const target = inProgress ? trip.dropoff_address : trip.kund_address;
   const fareCents = trip.final_fare_cents ?? trip.estimated_fare_cents;
 
   return (
@@ -47,30 +47,30 @@ export function ActiveTripScreen({ trip, onEvent }: Props) {
       <Text style={styles.status}>{STATUS_LABEL[trip.status] ?? trip.status}</Text>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Pickup</Text>
-        <Text style={styles.value}>{trip.pickup_address}</Text>
-        <Text style={[styles.label, { marginTop: spacing.md }]}>Dropoff</Text>
+        <Text style={styles.label}>Hämtas från</Text>
+        <Text style={styles.value}>{trip.kund_address}</Text>
+        <Text style={[styles.label, { marginTop: spacing.md }]}>Destination</Text>
         <Text style={styles.value}>{trip.dropoff_address}</Text>
         {fareCents != null ? <Text style={styles.fare}>{formatMoney(fareCents)}</Text> : null}
       </View>
 
       <Pressable style={styles.navButton} onPress={() => navigateTo(target)}>
-        <Text style={styles.navText}>Navigate to {inProgress ? 'destination' : 'pickup'}</Text>
+        <Text style={styles.navText}>Navigera till {inProgress ? 'destination' : 'kund'}</Text>
       </Pressable>
 
       <View style={styles.actions}>
         {(trip.status === 'assigned' || trip.status === 'driver_en_route') && (
-          <PrimaryButton label="Arrived at pickup" busy={busy} onPress={() => run('arrived')} />
+          <PrimaryButton label="Arrived at kund" busy={busy} onPress={() => run('arrived')} />
         )}
-        {trip.status === 'arrived_at_pickup' && (
-          <PrimaryButton label="Start trip" busy={busy} onPress={() => run('start')} />
+        {trip.status === 'arrived_at_kund' && (
+          <PrimaryButton label="Kund i bilen" busy={busy} onPress={() => run('start')} />
         )}
         {trip.status === 'in_progress' && (
-          <PrimaryButton label="Complete trip" busy={busy} onPress={() => run('complete')} />
+          <PrimaryButton label="Avsluta körning" busy={busy} onPress={() => run('complete')} />
         )}
         {!inProgress && (
           <Pressable style={styles.cancel} onPress={() => run('cancel')} disabled={busy}>
-            <Text style={styles.cancelText}>Cancel trip</Text>
+            <Text style={styles.cancelText}>Avbryt körning</Text>
           </Pressable>
         )}
       </View>
