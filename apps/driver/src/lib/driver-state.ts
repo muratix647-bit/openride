@@ -18,7 +18,7 @@ export interface ActiveTrip {
   id: string;
   status: string;
   pickup_address: string;
-  dropoff_address: string;
+  dropoff_address: string | null;
   customer_phone: string | null;
   estimated_fare_cents: number | null;
   final_fare_cents: number | null;
@@ -78,7 +78,7 @@ export function useDriverState(session: Session | null): DriverState {
     const status = statusRes.data as { id?: string; is_online?: boolean; status?: string } | null;
     setOnline(Boolean(status?.is_online));
     setVehicleId(null);
-    const b = tripRes.data as any;
+    const b = tripRes.data as { id: string; status: string; pickup_address: string; dropoff_address: string | null; customer_phone: string | null; estimated_price: number | string | null; fixed_price: number | string | null; actual_price: number | string | null } | null;
     setActiveTrip(b ? {
       id: b.id,
       status: b.status === 'Tilldelad' ? 'assigned' : b.status === 'På väg' ? 'driver_en_route' : b.status === 'arrived' ? 'arrived_at_pickup' : 'in_progress',
@@ -156,5 +156,6 @@ export async function fetchMyVehicles(driverId: string): Promise<Vehicle[]> {
     .select('id, registration_number, reg, make, model, vehicle_class')
     .eq('driver_id', driverId)
     .eq('active', true);
-  return ((data as any[]) ?? []).map((v) => ({ id: v.id, rego: v.registration_number ?? v.reg ?? '', make: v.make ?? '', model: v.model ?? '', vehicle_type: v.vehicle_class ?? 'Standard' }));
+  const vehicles = (data ?? []) as Array<{ id: string; registration_number: string | null; reg: string | null; make: string | null; model: string | null; vehicle_class: string | null }>;
+  return vehicles.map((v) => ({ id: v.id, rego: v.registration_number ?? v.reg ?? '', make: v.make ?? '', model: v.model ?? '', vehicle_type: v.vehicle_class ?? 'Standard' }));
 }
