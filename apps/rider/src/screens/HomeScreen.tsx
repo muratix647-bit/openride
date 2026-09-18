@@ -25,14 +25,14 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 const VEHICLE_TYPES = [
   { key: 'sedan', label: 'Sedan' },
-  { key: 'wheelchair_accessible', label: 'Wheelchair' },
+  { key: 'wheelchair_accessible', label: 'Rullstolsanpassad' },
 ] as const;
 
 export function HomeScreen({ displayName }: { displayName?: string | null }) {
   const navigation = useNavigation<Nav>();
-  const [pickup, setPickup] = useState<Place | null>(null);
+  const [pickup, setHämtas från] = useState<Place | null>(null);
   const [dropoff, setDropoff] = useState<Place | null>(null);
-  const [vehicleType, setVehicleType] = useState<string>('sedan');
+  const [vehicleType, setFordonType] = useState<string>('sedan');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Place[]>([]);
   const [estimate, setEstimate] = useState<FareEstimateResponse | null>(null);
@@ -41,7 +41,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
   const [booking, setBooking] = useState(false);
   const searchSeq = useRef(0);
 
-  // Pickup = current location.
+  // Hämtas från = current location.
   useEffect(() => {
     let active = true;
     (async () => {
@@ -54,10 +54,10 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
         const pos = await Location.getCurrentPositionAsync({});
         const label = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
         if (active) {
-          setPickup({
+          setHämtas från({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
-            label: label ?? 'Current location',
+            label: label ?? 'Min position',
           });
         }
       } catch {
@@ -85,7 +85,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
         if (seq === searchSeq.current) setResults(places);
       } catch (e) {
         if (seq === searchSeq.current) setResults([]);
-        if (!hasGeocoder()) Alert.alert('Search unavailable', (e as Error).message);
+        if (!hasGeocoder()) Alert.alert('Adressökning är inte tillgänglig', (e as Error).message);
       }
     }, 350);
     return () => clearTimeout(handle);
@@ -103,7 +103,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
       });
       setEstimate(e);
     } catch (e) {
-      Alert.alert('Could not estimate fare', (e as Error).message);
+      Alert.alert('Kunde inte beräkna pris', (e as Error).message);
     } finally {
       setEstimating(false);
     }
@@ -114,7 +114,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
       const { url } = await api.setupCard();
       if (url) await Linking.openURL(url);
     } catch (e) {
-      Alert.alert('Add card', (e as Error).message);
+      Alert.alert('Lägg till kort', (e as Error).message);
     }
   }, []);
 
@@ -132,7 +132,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
       });
       navigation.navigate('Trip', { tripId: trip_id });
     } catch (e) {
-      Alert.alert('Could not book', (e as Error).message);
+      Alert.alert('Kunde inte boka', (e as Error).message);
     } finally {
       setBooking(false);
     }
@@ -141,36 +141,36 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.hi}>Hi{displayName ? `, ${displayName}` : ''} 👋</Text>
+        <Text style={styles.hi}>Hej{displayName ? `, ${displayName}` : ''} 👋</Text>
         <View style={styles.headerLinks}>
-          <Pressable onPress={() => navigation.navigate('Receipts')} hitSlop={8}>
-            <Text style={styles.link}>Receipts</Text>
+          <Pressable onPress={() => navigation.navigate('Kvitton')} hitSlop={8}>
+            <Text style={styles.link}>Kvitton</Text>
           </Pressable>
           <Pressable onPress={onAddCard} hitSlop={8}>
-            <Text style={styles.link}>Add card</Text>
+            <Text style={styles.link}>Lägg till kort</Text>
           </Pressable>
           <Pressable onPress={() => navigation.navigate('ReportIncident')} hitSlop={8}>
-            <Text style={styles.link}>Help</Text>
+            <Text style={styles.link}>Hjälp</Text>
           </Pressable>
           <Pressable onPress={() => void signOut()} hitSlop={8}>
-            <Text style={styles.signOut}>Sign out</Text>
+            <Text style={styles.signOut}>Logga ut</Text>
           </Pressable>
         </View>
       </View>
 
-      <Text style={styles.label}>Pickup</Text>
+      <Text style={styles.label}>Hämtas från</Text>
       <View style={styles.fieldBox}>
         {locating ? (
           <ActivityIndicator />
         ) : (
-          <Text style={styles.fieldText}>{pickup?.label ?? 'Location unavailable'}</Text>
+          <Text style={styles.fieldText}>{pickup?.label ?? 'Position ej tillgänglig'}</Text>
         )}
       </View>
 
-      <Text style={styles.label}>Where to?</Text>
+      <Text style={styles.label}>Vart vill du åka?</Text>
       <TextInput
         style={styles.input}
-        placeholder="Search destination"
+        placeholder="Sök destination"
         value={query}
         onChangeText={(t) => {
           setQuery(t);
@@ -200,14 +200,14 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
         />
       ) : null}
 
-      <Text style={styles.label}>Vehicle</Text>
+      <Text style={styles.label}>Fordon</Text>
       <View style={styles.vehicleRow}>
         {VEHICLE_TYPES.map((v) => (
           <Pressable
             key={v.key}
             style={[styles.chip, vehicleType === v.key && styles.chipActive]}
             onPress={() => {
-              setVehicleType(v.key);
+              setFordonType(v.key);
               setEstimate(null);
             }}
           >
@@ -234,11 +234,11 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
             onPress={onGetEstimate}
             disabled={!pickup || !dropoff || estimating}
           >
-            <Text style={styles.buttonText}>{estimating ? 'Estimating…' : 'Get fare estimate'}</Text>
+            <Text style={styles.buttonText}>{estimating ? 'Beräknar…' : 'Visa pris'}</Text>
           </Pressable>
         ) : (
           <Pressable style={styles.button} onPress={onBook} disabled={booking}>
-            <Text style={styles.buttonText}>{booking ? 'Booking…' : 'Book now'}</Text>
+            <Text style={styles.buttonText}>{booking ? 'Bokar…' : 'Boka nu'}</Text>
           </Pressable>
         )}
       </View>
