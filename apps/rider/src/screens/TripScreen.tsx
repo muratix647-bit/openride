@@ -13,7 +13,7 @@ interface TripRow {
   id: string;
   status: string;
   pickup_address: string;
-  dropoff_address: string;
+  dropoff_address: string | null;
   estimated_price: number | null;
   fixed_price: number | null;
   actual_price: number | null;
@@ -27,7 +27,8 @@ const STATUS_LABEL: Record<string, string> = {
   'På väg': 'Föraren är på väg',
   'Framme': 'Din förare är framme',
   'Kund i bilen': 'Resan pågår',
-  'Avslutad': 'Resan är avslutad',
+  'Slutförd': 'Resan är avslutad',
+  'Hämtad': 'Resan pågår',
   'Avbokad': 'Resan är avbokad',
 };
 
@@ -106,7 +107,7 @@ export function TripScreen({ route }: Props) {
         <Text style={[styles.dot, { color: colors.brand }]}>◆</Text>
         <View style={styles.flex}>
           <Text style={styles.label}>Destination</Text>
-          <Text style={styles.value}>{trip.dropoff_address}</Text>
+          <Text style={styles.value}>{trip.dropoff_address ?? '—'}</Text>
         </View>
       </View>
 
