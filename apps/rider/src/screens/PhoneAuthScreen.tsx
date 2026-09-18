@@ -16,18 +16,18 @@ export function PhoneAuthScreen() {
       await sendOtp(phone.trim());
       setStage('code');
     } catch (e) {
-      Alert.alert('Could not send code', (e as Error).message);
+      Alert.alert('Kunde inte skicka koden', (e as Error).message);
     } finally {
       setBusy(false);
     }
   }
 
-  async function onVerify(): Promise<void> {
+  async function onVerifiera(): Promise<void> {
     setBusy(true);
     try {
       await verifyOtp(phone.trim(), code.trim());
     } catch (e) {
-      Alert.alert('Code did not match', (e as Error).message);
+      Alert.alert('Koden stämmer inte', (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -35,16 +35,16 @@ export function PhoneAuthScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>OpenRide</Text>
+      <Text style={styles.title}>Avenyn Taxi</Text>
       <Text style={styles.subtitle}>
-        {stage === 'phone' ? 'Enter your phone number' : `Code sent to ${phone}`}
+        {stage === 'phone' ? 'Ange ditt mobilnummer' : `Kod skickad till ${phone}`}
       </Text>
 
       {stage === 'phone' ? (
         <>
           <TextInput
             style={styles.input}
-            placeholder="+61 400 000 000"
+            placeholder="+46 70 123 45 67"
             keyboardType="phone-pad"
             autoComplete="tel"
             value={phone}
@@ -52,14 +52,14 @@ export function PhoneAuthScreen() {
             editable={!busy}
           />
           <Pressable style={styles.button} onPress={onSendOtp} disabled={busy || phone.length < 6}>
-            <Text style={styles.buttonText}>Send code</Text>
+            <Text style={styles.buttonText}>Skicka kod</Text>
           </Pressable>
         </>
       ) : (
         <>
           <TextInput
             style={styles.input}
-            placeholder="6-digit code"
+            placeholder="6-siffrig kod"
             keyboardType="number-pad"
             autoComplete="sms-otp"
             value={code}
@@ -67,11 +67,11 @@ export function PhoneAuthScreen() {
             editable={!busy}
             maxLength={6}
           />
-          <Pressable style={styles.button} onPress={onVerify} disabled={busy || code.length < 4}>
-            <Text style={styles.buttonText}>Verify</Text>
+          <Pressable style={styles.button} onPress={onVerifiera} disabled={busy || code.length < 4}>
+            <Text style={styles.buttonText}>Verifiera</Text>
           </Pressable>
           <Pressable onPress={() => setStage('phone')} disabled={busy}>
-            <Text style={styles.link}>Use a different number</Text>
+            <Text style={styles.link}>Använd ett annat nummer</Text>
           </Pressable>
         </>
       )}
