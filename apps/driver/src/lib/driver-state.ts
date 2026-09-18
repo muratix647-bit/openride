@@ -58,17 +58,16 @@ export function useDriverState(session: Session | null): DriverState {
     const nowIso = new Date().toISOString();
     const [statusRes, tripRes, offerRes] = await Promise.all([
       supabase
-        .from('driver_status')
-        .select('status, vehicle_id')
-        .eq('driver_id', driverId)
-        .is('ended_at', null)
+        .from('drivers')
+        .select('id, is_online, status')
+        .eq('auth_user_id', driverId)
         .maybeSingle(),
       supabase
-        .from('trips')
-        .select('id, status, pickup_address, dropoff_address, estimated_fare_cents, final_fare_cents')
+        .from('bookings')
+        .select('id, status, pickup_address, dropoff_address, estimated_price, fixed_price, actual_price')
         .eq('driver_id', driverId)
-        .in('status', ACTIVE_STATUSES)
-        .order('assigned_at', { ascending: false })
+        .in('status', ['Tilldelad', 'På väg', 'Framme', 'Kund i bilen'])
+        .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle(),
       supabase
@@ -82,10 +81,18 @@ export function useDriverState(session: Session | null): DriverState {
         .maybeSingle(),
     ]);
 
-    const status = statusRes.data as { status?: string; vehicle_id?: string } | null;
-    setOnline(Boolean(status) && status?.status !== 'offline');
-    setVehicleId(status?.vehicle_id ?? null);
-    setActiveTrip((tripRes.data as ActiveTrip) ?? null);
+    const status = statusRes.data as { id?: string; is_online?: boolean; status?: string } | null;
+    setOnline(Boolean(status?.is_online));
+    setVehicleId(null);
+    const b = tripRes.data as any;
+    setActiveTrip(b ? {
+      id: b.id,
+      status: b.status === 'Tilldelad' ? 'assigned' : b.status === 'På väg' ? 'driver_en_route' : b.status === 'Framme' ? 'arrived_at_pickup' : 'in_progress',
+      pickup_address: b.pickup_address,
+      dropoff_address: b.dropoff_address,
+      estimated_fare_cents: b.fixed_price != null ? Math.round(Number(b.fixed_price) * 100) : b.estimated_price != null ? Math.round(Number(b.estimated_price) * 100) : null,
+      final_fare_cents: b.actual_price != null ? Math.round(Number(b.actual_price) * 100) : null,
+    } : null);
     setPendingOffer((offerRes.data as unknown as PendingOffer) ?? null);
     setLoading(false);
   }, [driverId]);
@@ -95,10 +102,10 @@ export function useDriverState(session: Session | null): DriverState {
     if (!driverId) return;
     void refresh();
     const channel = supabase.channel(channels.driver(driverId));
-    for (const table of ['driver_status', 'trips', 'trip_offers']) {
+    for (const table of ['drivers', 'bookings']) {
       channel.on(
         'postgres_changes',
-        { event: '*', schema: 'public', table, filter: `driver_id=eq.${driverId}` },
+        { event: '*', schema: 'public', table },
         () => void refresh(),
       );
     }
@@ -139,8 +146,8 @@ export function useDriverState(session: Session | null): DriverState {
 export async function fetchMyVehicles(driverId: string): Promise<Vehicle[]> {
   const { data } = await supabase
     .from('vehicles')
-    .select('id, rego, make, model, vehicle_type')
-    .eq('default_driver_id', driverId)
-    .eq('status', 'active');
-  return (data as Vehicle[]) ?? [];
+    .select('id, registration_number, reg, make, model, vehicle_class')
+    .eq('driver_id', driverId)
+    .eq('active', true);
+  return ((data as any[]) ?? []).map((v) => ({ id: v.id, rego: v.registration_number ?? v.reg ?? '', make: v.make ?? '', model: v.model ?? '', vehicle_type: v.vehicle_class ?? 'Standard' }));
 }
