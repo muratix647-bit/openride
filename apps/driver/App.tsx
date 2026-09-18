@@ -46,8 +46,7 @@ function SignedIn({ session }: { session: Session }) {
       <ActiveTripScreen
         trip={state.activeTrip}
         onEvent={async (event, reason) => {
-          await api.tripEvent(state.activeTrip!.id, event, reason);
-          await state.refresh();
+          await state.tripEvent(event);
         }}
       />
     );
@@ -76,7 +75,7 @@ function SignedIn({ session }: { session: Session }) {
       online={state.online}
       onGoOnline={state.goOnline}
       onGoOffline={state.goOffline}
-      onReport={() => setShowReport(true)}
+      onRapportera={() => setShowReport(true)}
     />
   );
 }
