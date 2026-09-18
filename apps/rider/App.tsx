@@ -43,15 +43,15 @@ export default function App() {
       ) : (
         <NavigationContainer>
           <Stack.Navigator>
-            <Stack.Screen name="Home" options={{ title: 'OpenRide' }}>
+            <Stack.Screen name="Home" options={{ title: 'Avenyn Taxi' }}>
               {() => <HomeScreen displayName={profile?.display_name} />}
             </Stack.Screen>
-            <Stack.Screen name="Trip" component={TripScreen} options={{ title: 'Your trip' }} />
-            <Stack.Screen name="Receipts" component={ReceiptsScreen} options={{ title: 'Receipts' }} />
+            <Stack.Screen name="Trip" component={TripScreen} options={{ title: 'Din resa' }} />
+            <Stack.Screen name="Receipts" component={ReceiptsScreen} options={{ title: 'Kvitton' }} />
             <Stack.Screen
               name="ReportIncident"
               component={ReportIncidentScreen}
-              options={{ title: 'Report an issue' }}
+              options={{ title: 'Rapportera problem' }}
             />
           </Stack.Navigator>
         </NavigationContainer>
