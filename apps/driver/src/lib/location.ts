@@ -9,7 +9,7 @@ let sub: Location.LocationSubscription | null = null;
 
 export async function startLocationStreaming(driverId: string): Promise<void> {
   const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') throw new Error('Location permission is required to go online.');
+  if (status !== 'granted') throw new Error('Platsbehörighet krävs för att gå online.');
 
   // Push once immediately so the driver appears on the map without waiting.
   try {
@@ -33,14 +33,14 @@ export function stopLocationStreaming(): void {
 }
 
 async function pushLocation(driverId: string, pos: Location.LocationObject): Promise<void> {
-  await supabase.from('driver_location_latest').upsert(
+  await supabase.from('driver_locations').upsert(
     {
       driver_id: driverId,
-      point: `SRID=4326;POINT(${pos.coords.longitude} ${pos.coords.latitude})`,
-      recorded_at: new Date(pos.timestamp).toISOString(),
-      speed_mps: pos.coords.speed,
-      heading_deg: pos.coords.heading,
-      accuracy_m: pos.coords.accuracy,
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      heading: pos.coords.heading,
+      speed_kmh: pos.coords.speed == null ? null : Math.max(0, pos.coords.speed * 3.6),
+      updated_at: new Date(pos.timestamp).toISOString(),
     },
     { onConflict: 'driver_id' },
   );
