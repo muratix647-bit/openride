@@ -9,17 +9,17 @@ export function DriverStatusControl({ driverId, status }: { driverId: string; st
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
-  async function setStatus(next: 'approved' | 'suspended'): Promise<void> {
+  async function setStatus(approved: boolean): Promise<void> {
     setBusy(true);
     try {
       const { error } = await getSupabaseBrowser()
-        .from('driver_profiles')
-        .update({ status: next })
-        .eq('user_id', driverId);
+        .from('drivers')
+        .update({ approved, active: approved, status: approved ? 'Offline' : 'Pausad', is_online: false, updated_at: new Date().toISOString() })
+        .eq('id', driverId);
       if (error) throw error;
       router.refresh();
     } catch (e) {
-      alert(`Could not update: ${(e as Error).message}`);
+      alert(`Kunde inte uppdatera: ${(e as Error).message}`);
     } finally {
       setBusy(false);
     }
@@ -27,21 +27,21 @@ export function DriverStatusControl({ driverId, status }: { driverId: string; st
 
   return (
     <div className="flex gap-2">
-      {status !== 'approved' ? (
+      {status !== 'Godkänd' ? (
         <button
           type="button"
           disabled={busy}
-          onClick={() => setStatus('approved')}
+          onClick={() => setStatus(true)}
           className="bg-green-600 text-white text-sm rounded px-3 py-1.5 disabled:opacity-60"
         >
           Approve
         </button>
       ) : null}
-      {status !== 'suspended' ? (
+      {status !== 'Pausad' ? (
         <button
           type="button"
           disabled={busy}
-          onClick={() => setStatus('suspended')}
+          onClick={() => setStatus(false)}
           className="bg-red-600 text-white text-sm rounded px-3 py-1.5 disabled:opacity-60"
         >
           Suspend
