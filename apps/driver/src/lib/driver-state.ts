@@ -43,6 +43,7 @@ export interface DriverState {
   refresh: () => Promise<void>;
   goOnline: (vehicleId: string) => Promise<void>;
   goOffline: () => Promise<void>;
+  tripEvent: (event: 'en-route' | 'arrived' | 'start' | 'complete' | 'cancel') => Promise<void>;
 }
 
 export function useDriverState(session: Session | null): DriverState {
@@ -139,7 +140,19 @@ export function useDriverState(session: Session | null): DriverState {
     await refresh();
   }, [refresh]);
 
-  return { loading, online, vehicleId, activeTrip, pendingOffer, refresh, goOnline, goOffline };
+  const tripEvent = useCallback(async (event: 'en-route' | 'arrived' | 'start' | 'complete' | 'cancel') => {
+    if (!activeTrip) return;
+    const next = event === 'en-route' ? 'På väg' : event === 'arrived' ? 'Framme' : event === 'start' ? 'Kund i bilen' : event === 'complete' ? 'Avslutad' : 'Avbokad';
+    const patch: Record<string, unknown> = { status: next, updated_at: new Date().toISOString() };
+    if (event === 'start') patch.picked_up_at = new Date().toISOString();
+    if (event === 'complete') patch.completed_at = new Date().toISOString();
+    if (event === 'cancel') patch.cancelled_at = new Date().toISOString();
+    const { error } = await supabase.from('bookings').update(patch).eq('id', activeTrip.id).eq('driver_id', driverId);
+    if (error) throw error;
+    await refresh();
+  }, [activeTrip, driverId, refresh]);
+
+  return { loading, online, vehicleId, activeTrip, pendingOffer, refresh, goOnline, goOffline, tripEvent };
 }
 
 /** Vehicles this driver can operate (their default vehicle(s)). */
