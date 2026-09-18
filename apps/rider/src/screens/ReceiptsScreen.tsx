@@ -8,7 +8,7 @@ interface Receipt {
   id: string;
   status: string;
   pickup_address: string;
-  dropoff_address: string;
+  dropoff_address: string | null;
   actual_price: number | null;
   fixed_price: number | null;
   estimated_price: number | null;
@@ -17,6 +17,7 @@ interface Receipt {
 }
 
 const PAYMENT_LABEL: Record<string, string> = {
+  unpaid: 'Obetald',
   paid: 'Betald',
   pending: 'Betalning väntar',
   authorised: 'Godkänd',
@@ -34,7 +35,7 @@ export function ReceiptsScreen() {
     void supabase
       .from('bookings')
       .select('id, status, pickup_address, dropoff_address, actual_price, fixed_price, estimated_price, payment_status, completed_at')
-      .in('status', ['Avslutad', 'Avbokad'])
+      .in('status', ['Slutförd', 'Avbokad'])
       .order('completed_at', { ascending: false, nullsFirst: false })
       .limit(50)
       .then(({ data }) => {
@@ -68,7 +69,7 @@ export function ReceiptsScreen() {
           <View style={styles.row}>
             <View style={styles.flex}>
               <Text style={styles.route} numberOfLines={1}>
-                {item.pickup_address} → {item.dropoff_address}
+                {item.pickup_address} → {item.dropoff_address ?? '—'}
               </Text>
               <Text style={styles.meta}>
                 {item.completed_at ? new Date(item.completed_at).toLocaleDateString() : item.status} ·{' '}
