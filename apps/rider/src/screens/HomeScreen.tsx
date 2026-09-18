@@ -33,6 +33,9 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
   const [pickup, setPickup] = useState<Place | null>(null);
   const [dropoff, setDropoff] = useState<Place | null>(null);
   const [vehicleType, setVehicleType] = useState<string>('sedan');
+  const [customerName, setCustomerName] = useState(displayName ?? '');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Place[]>([]);
   const [estimate, setEstimate] = useState<FareEstimateResponse | null>(null);
@@ -100,6 +103,9 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
         pickup: { lat: pickup.lat, lng: pickup.lng },
         dropoff: { lat: dropoff.lat, lng: dropoff.lng },
         vehicle_type: vehicleType,
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim(),
+        customer_email: customerEmail.trim(),
       });
       setEstimate(e);
     } catch (e) {
@@ -120,6 +126,14 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
 
   const onBook = useCallback(async () => {
     if (!pickup || !dropoff) return;
+    if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
+      Alert.alert('Kontaktuppgifter krävs', 'Fyll i namn, mobilnummer och e-postadress.');
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(customerEmail.trim())) {
+      Alert.alert('Kontrollera e-postadressen', 'Ange en giltig e-postadress.');
+      return;
+    }
     setBooking(true);
     try {
       const { booking_id } = await api.createBooking({
@@ -136,7 +150,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
     } finally {
       setBooking(false);
     }
-  }, [pickup, dropoff, vehicleType, navigation]);
+  }, [pickup, dropoff, vehicleType, customerName, customerPhone, customerEmail, navigation]);
 
   return (
     <View style={styles.container}>
@@ -157,6 +171,13 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
           </Pressable>
         </View>
       </View>
+
+      <Text style={styles.label}>Namn</Text>
+      <TextInput style={styles.input} placeholder="För- och efternamn" value={customerName} onChangeText={setCustomerName} autoCapitalize="words" />
+      <Text style={styles.label}>Mobilnummer</Text>
+      <TextInput style={styles.input} placeholder="+46 70 000 00 00" value={customerPhone} onChangeText={setCustomerPhone} keyboardType="phone-pad" />
+      <Text style={styles.label}>E-post</Text>
+      <TextInput style={styles.input} placeholder="namn@exempel.se" value={customerEmail} onChangeText={setCustomerEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
 
       <Text style={styles.label}>Hämtas från</Text>
       <View style={styles.fieldBox}>
@@ -237,7 +258,11 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
             <Text style={styles.buttonText}>{estimating ? 'Beräknar…' : 'Visa pris'}</Text>
           </Pressable>
         ) : (
-          <Pressable style={styles.button} onPress={onBook} disabled={booking}>
+          <Pressable
+            style={[styles.button, (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) && styles.disabled]}
+            onPress={onBook}
+            disabled={booking || !customerName.trim() || !customerPhone.trim() || !customerEmail.trim()}
+          >
             <Text style={styles.buttonText}>{booking ? 'Bokar…' : 'Boka nu'}</Text>
           </Pressable>
         )}
