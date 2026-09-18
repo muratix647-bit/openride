@@ -11,9 +11,6 @@ const nav = [
   { href: '/vehicles', label: 'Fordon' },
   { href: '/fares', label: 'Priser' },
   { href: '/payments', label: 'Betalningar' },
-  { href: '/compliance', label: 'Dokument' },
-  { href: '/incidents', label: 'Händelser' },
-  { href: '/audit', label: 'Aktivitetslogg' },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
