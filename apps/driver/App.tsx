@@ -22,7 +22,6 @@ function Centered({ children }: { children: React.ReactNode }) {
 }
 
 function SignedIn({ session }: { session: Session }) {
-  const driverId = session.user.id;
   const displayName =
     (session.user.user_metadata?.display_name as string | undefined) ?? session.user.phone ?? null;
   const state = useDriverState(session);
@@ -70,7 +69,7 @@ function SignedIn({ session }: { session: Session }) {
 
   return (
     <HomeScreen
-      driverId={driverId}
+      driverId={state.driverId ?? session.user.id}
       displayName={displayName}
       online={state.online}
       onGoOnline={state.goOnline}
