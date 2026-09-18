@@ -30,9 +30,9 @@ const VEHICLE_TYPES = [
 
 export function HomeScreen({ displayName }: { displayName?: string | null }) {
   const navigation = useNavigation<Nav>();
-  const [pickup, setHämtas från] = useState<Place | null>(null);
+  const [pickup, setPickup] = useState<Place | null>(null);
   const [dropoff, setDropoff] = useState<Place | null>(null);
-  const [vehicleType, setFordonType] = useState<string>('sedan');
+  const [vehicleType, setVehicleType] = useState<string>('sedan');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Place[]>([]);
   const [estimate, setEstimate] = useState<FareEstimateResponse | null>(null);
@@ -54,7 +54,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
         const pos = await Location.getCurrentPositionAsync({});
         const label = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
         if (active) {
-          setHämtas från({
+          setPickup({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
             label: label ?? 'Min position',
@@ -122,7 +122,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
     if (!pickup || !dropoff) return;
     setBooking(true);
     try {
-      const { trip_id } = await api.createBooking({
+      const { booking_id } = await api.createBooking({
         type: 'now',
         pickup: { lat: pickup.lat, lng: pickup.lng },
         pickup_label: pickup.label,
@@ -130,7 +130,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
         dropoff_label: dropoff.label,
         vehicle_type: vehicleType,
       });
-      navigation.navigate('Trip', { tripId: trip_id });
+      navigation.navigate('Trip', { tripId: booking_id });
     } catch (e) {
       Alert.alert('Kunde inte boka', (e as Error).message);
     } finally {
@@ -143,7 +143,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
       <View style={styles.header}>
         <Text style={styles.hi}>Hej{displayName ? `, ${displayName}` : ''} 👋</Text>
         <View style={styles.headerLinks}>
-          <Pressable onPress={() => navigation.navigate('Kvitton')} hitSlop={8}>
+          <Pressable onPress={() => navigation.navigate('Receipts')} hitSlop={8}>
             <Text style={styles.link}>Kvitton</Text>
           </Pressable>
           <Pressable onPress={onAddCard} hitSlop={8}>
@@ -207,7 +207,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
             key={v.key}
             style={[styles.chip, vehicleType === v.key && styles.chipActive]}
             onPress={() => {
-              setFordonType(v.key);
+              setVehicleType(v.key);
               setEstimate(null);
             }}
           >
