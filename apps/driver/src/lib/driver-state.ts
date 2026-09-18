@@ -38,7 +38,6 @@ export interface DriverState {
   vehicleId: string | null;
   driverId: string | null;
   activeTrip: ActiveTrip | null;
-  pendingOffer: PendingOffer | null;
   refresh: () => Promise<void>;
   goOnline: (vehicleId: string) => Promise<void>;
   goOffline: () => Promise<void>;
@@ -52,7 +51,6 @@ export function useDriverState(session: Session | null): DriverState {
   const [online, setOnline] = useState(false);
   const [vehicleId, setVehicleId] = useState<string | null>(null);
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
-  const [pendingOffer, setPendingOffer] = useState<PendingOffer | null>(null);
 
   const refresh = useCallback(async () => {
     if (!authUserId) return;
@@ -88,7 +86,6 @@ export function useDriverState(session: Session | null): DriverState {
       estimated_fare_cents: b.fixed_price != null ? Math.round(Number(b.fixed_price) * 100) : b.estimated_price != null ? Math.round(Number(b.estimated_price) * 100) : null,
       final_fare_cents: b.actual_price != null ? Math.round(Number(b.actual_price) * 100) : null,
     } : null);
-    setPendingOffer(null);
     setLoading(false);
   }, [authUserId]);
 
@@ -136,7 +133,7 @@ export function useDriverState(session: Session | null): DriverState {
 
   const tripEvent = useCallback(async (event: 'en-route' | 'arrived' | 'start' | 'complete' | 'cancel') => {
     if (!activeTrip) return;
-    const next = event === 'en-route' ? 'På väg' : event === 'arrived' ? 'Framme' : event === 'start' ? 'Kund i bilen' : event === 'complete' ? 'Avslutad' : 'Avbokad';
+    const next = event === 'en-route' ? 'På väg' : event === 'arrived' ? 'Framme' : event === 'start' ? 'Kund i bilen' : event === 'complete' ? 'Slutförd' : 'Avbokad';
     const patch: Record<string, unknown> = { status: next, updated_at: new Date().toISOString() };
     if (event === 'start') patch.picked_up_at = new Date().toISOString();
     if (event === 'complete') patch.completed_at = new Date().toISOString();
@@ -147,7 +144,7 @@ export function useDriverState(session: Session | null): DriverState {
     await refresh();
   }, [activeTrip, driverId, refresh]);
 
-  return { loading, online, vehicleId, driverId, activeTrip, pendingOffer, refresh, goOnline, goOffline, tripEvent };
+  return { loading, online, vehicleId, driverId, activeTrip, refresh, goOnline, goOffline, tripEvent };
 }
 
 /** Vehicles this driver can operate (their default vehicle(s)). */
