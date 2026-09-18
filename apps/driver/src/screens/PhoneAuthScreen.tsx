@@ -17,18 +17,18 @@ export function PhoneAuthScreen() {
       await sendOtp(phone.trim());
       setStage('code');
     } catch (e) {
-      Alert.alert('Could not send code', (e as Error).message);
+      Alert.alert('Kunde inte skicka kod', (e as Error).message);
     } finally {
       setBusy(false);
     }
   }
 
-  async function onVerify(): Promise<void> {
+  async function onVerifiera(): Promise<void> {
     setBusy(true);
     try {
       await verifyOtp(phone.trim(), code.trim());
     } catch (e) {
-      Alert.alert('Code did not match', (e as Error).message);
+      Alert.alert('Koden stämde inte', (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -36,30 +36,30 @@ export function PhoneAuthScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'right', 'bottom', 'left']}>
-      <Text style={styles.title}>OpenRide Driver</Text>
+      <Text style={styles.title}>Avenyn Taxi Förare</Text>
       <Text style={styles.subtitle}>
-        {stage === 'phone' ? 'Sign in with your driver phone number' : `Code sent to ${phone}`}
+        {stage === 'phone' ? 'Logga in med ditt förarnummer' : `Kod skickad till ${phone}`}
       </Text>
 
       {stage === 'phone' ? (
         <>
           <TextInput
             style={styles.input}
-            placeholder="+61 400 000 000"
+            placeholder="+46 70 000 00 00"
             keyboardType="phone-pad"
             value={phone}
             onChangeText={setPhone}
             editable={!busy}
           />
           <Pressable style={styles.button} onPress={onSendOtp} disabled={busy || phone.length < 6}>
-            <Text style={styles.buttonText}>Send code</Text>
+            <Text style={styles.buttonText}>Skicka kod</Text>
           </Pressable>
         </>
       ) : (
         <>
           <TextInput
             style={styles.input}
-            placeholder="6-digit code"
+            placeholder="6-siffrig kod"
             keyboardType="number-pad"
             value={code}
             onChangeText={setCode}
@@ -70,7 +70,7 @@ export function PhoneAuthScreen() {
             <Text style={styles.buttonText}>Verify</Text>
           </Pressable>
           <Pressable onPress={() => setStage('phone')} disabled={busy}>
-            <Text style={styles.link}>Use a different number</Text>
+            <Text style={styles.link}>Använd ett annat nummer</Text>
           </Pressable>
         </>
       )}
