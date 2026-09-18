@@ -3,11 +3,20 @@ import { colors, spacing, typography } from '@openride/ui';
 import type { RouteProp } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 
 import type { RootStackParamList } from '../../App';
 import { supabase } from '../lib/supabase';
 
 type Props = { route: RouteProp<RootStackParamList, 'Trip'> };
+
+interface DriverLocation {
+  driver_id: string;
+  latitude: number;
+  longitude: number;
+  heading: number | null;
+  updated_at: string;
+}
 
 interface TripRow {
   id: string;
@@ -38,6 +47,7 @@ export function TripScreen({ route }: Props) {
   const { tripId } = route.params;
   const [trip, setTrip] = useState<TripRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -69,6 +79,39 @@ export function TripScreen({ route }: Props) {
     };
   }, [tripId]);
 
+  useEffect(() => {
+    if (!trip?.driver_id || !ACTIVE.has(trip.status)) {
+      setDriverLocation(null);
+      return;
+    }
+    const driverId = trip.driver_id;
+    let active = true;
+    const loadLocation = async () => {
+      const { data } = await supabase
+        .from('driver_locations')
+        .select('driver_id, latitude, longitude, heading, updated_at')
+        .eq('driver_id', driverId)
+        .maybeSingle();
+      if (active) setDriverLocation(data as DriverLocation | null);
+    };
+    void loadLocation();
+    const channel = supabase
+      .channel(`avenyn:rider-location:${driverId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'driver_locations', filter: `driver_id=eq.${driverId}` },
+        (payload) => {
+          if (payload.eventType === 'DELETE') setDriverLocation(null);
+          else setDriverLocation(payload.new as DriverLocation);
+        },
+      )
+      .subscribe();
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [trip?.driver_id, trip?.status]);
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -95,6 +138,28 @@ export function TripScreen({ route }: Props) {
         ) : null}
         <Text style={styles.statusText}>{STATUS_LABEL[trip.status] ?? trip.status}</Text>
       </View>
+
+      {driverLocation && isActive ? (
+        <View style={styles.mapWrap}>
+          <MapView
+            style={styles.map}
+            region={{
+              latitude: driverLocation.latitude,
+              longitude: driverLocation.longitude,
+              latitudeDelta: 0.02,
+              longitudeDelta: 0.02,
+            }}
+          >
+            <Marker
+              coordinate={{ latitude: driverLocation.latitude, longitude: driverLocation.longitude }}
+              title="Din Avenyn Taxi"
+              description="Förarens liveposition"
+              rotation={driverLocation.heading ?? 0}
+            />
+          </MapView>
+          <Text style={styles.liveText}>Taxins position uppdateras live</Text>
+        </View>
+      ) : null}
 
       <View style={styles.row}>
         <Text style={styles.dot}>●</Text>
@@ -132,6 +197,9 @@ const styles = StyleSheet.create({
   statusActive: { backgroundColor: colors.brand },
   statusDone: { backgroundColor: colors.success },
   statusText: { color: '#fff', fontSize: typography.size.lg, fontWeight: '700' },
+  mapWrap: { marginBottom: spacing.xl },
+  map: { height: 240, borderRadius: 12 },
+  liveText: { marginTop: spacing.sm, color: colors.textMuted, fontSize: typography.size.sm },
   row: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.lg },
   dot: { fontSize: 14, marginRight: spacing.md, marginTop: 2, color: colors.textMuted },
   flex: { flex: 1 },
