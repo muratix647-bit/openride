@@ -15,7 +15,7 @@ interface Props {
 const STATUS_LABEL: Record<string, string> = {
   assigned: 'Kör till kunden',
   driver_en_route: 'På väg till kunden',
-  arrived_at_kund: 'Framme hos kunden',
+  arrived_at_pickup: 'Framme hos kunden',
   in_progress: 'Kund i bilen',
 };
 
@@ -39,7 +39,7 @@ export function ActiveTripScreen({ trip, onEvent }: Props) {
   }
 
   const inProgress = trip.status === 'in_progress';
-  const target = inProgress ? trip.dropoff_address : trip.kund_address;
+  const target = inProgress ? trip.dropoff_address : trip.pickup_address;
   const fareCents = trip.final_fare_cents ?? trip.estimated_fare_cents;
 
   return (
@@ -48,7 +48,7 @@ export function ActiveTripScreen({ trip, onEvent }: Props) {
 
       <View style={styles.card}>
         <Text style={styles.label}>Hämtas från</Text>
-        <Text style={styles.value}>{trip.kund_address}</Text>
+        <Text style={styles.value}>{trip.pickup_address}</Text>
         <Text style={[styles.label, { marginTop: spacing.md }]}>Destination</Text>
         <Text style={styles.value}>{trip.dropoff_address}</Text>
         {fareCents != null ? <Text style={styles.fare}>{formatMoney(fareCents)}</Text> : null}
@@ -60,9 +60,9 @@ export function ActiveTripScreen({ trip, onEvent }: Props) {
 
       <View style={styles.actions}>
         {(trip.status === 'assigned' || trip.status === 'driver_en_route') && (
-          <PrimaryButton label="Arrived at kund" busy={busy} onPress={() => run('arrived')} />
+          <PrimaryButton label="Framme hos kund" busy={busy} onPress={() => run('arrived')} />
         )}
-        {trip.status === 'arrived_at_kund' && (
+        {trip.status === 'arrived_at_pickup' && (
           <PrimaryButton label="Kund i bilen" busy={busy} onPress={() => run('start')} />
         )}
         {trip.status === 'in_progress' && (
