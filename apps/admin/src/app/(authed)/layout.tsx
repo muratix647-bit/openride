@@ -5,18 +5,18 @@ import { SignOutButton } from '@/components/SignOutButton';
 import { getSupabaseServer } from '@/lib/supabase-server';
 
 const nav = [
-  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/dashboard', label: 'Översikt' },
   { href: '/dispatch', label: 'Dispatch' },
-  { href: '/drivers', label: 'Drivers' },
-  { href: '/vehicles', label: 'Vehicles' },
-  { href: '/fares', label: 'Fares' },
-  { href: '/payments', label: 'Payments' },
-  { href: '/compliance', label: 'Compliance' },
-  { href: '/incidents', label: 'Incidents' },
-  { href: '/audit', label: 'Audit log' },
+  { href: '/drivers', label: 'Förare' },
+  { href: '/vehicles', label: 'Fordon' },
+  { href: '/fares', label: 'Priser' },
+  { href: '/payments', label: 'Betalningar' },
+  { href: '/compliance', label: 'Dokument' },
+  { href: '/incidents', label: 'Händelser' },
+  { href: '/audit', label: 'Aktivitetslogg' },
 ];
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function ÖversiktLayout({ children }: { children: React.ReactNode }) {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -24,7 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen flex">
       <aside className="w-56 bg-white border-r p-4 flex flex-col">
-        <div className="text-lg font-semibold text-brand mb-6">OpenRide</div>
+        <div className="text-lg font-semibold text-brand mb-6">Avenyn Taxi</div>
         <nav className="flex flex-col gap-1">
           {nav.map((n) => (
             <Link
