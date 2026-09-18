@@ -17,6 +17,57 @@ interface Body {
   customer_email?: string;
 }
 
+
+async function sendBookingEmails(booking: any): Promise<void> {
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  if (!apiKey) {
+    console.warn('RESEND_API_KEY saknas; bokningen sparades men e-post skickades inte.');
+    return;
+  }
+
+  const operatorEmail = Deno.env.get('BOOKING_NOTIFICATION_EMAIL') || 'info@avenyntaxi.se';
+  const fromEmail = Deno.env.get('BOOKING_FROM_EMAIL') || 'Avenyn Taxi <bokning@avenyntaxi.se>';
+  const number = booking.booking_number ?? booking.id;
+  const price = booking.actual_price ?? booking.fixed_price ?? booking.estimated_price;
+  const details = [
+    `Bokningsnummer: ${number}`,
+    `Namn: ${booking.customer_name}`,
+    `Telefon: ${booking.customer_phone ?? '—'}`,
+    `E-post: ${booking.customer_email ?? '—'}`,
+    `Hämtas från: ${booking.pickup_address}`,
+    `Destination: ${booking.dropoff_address ?? '—'}`,
+    `Datum: ${booking.booking_date}`,
+    `Tid: ${booking.pickup_time}`,
+    `Passagerare: ${booking.passengers}`,
+    `Biltyp: ${booking.car_type}`,
+    `Pris: ${price != null ? `${price} kr` : '—'}`,
+  ].join('\n');
+
+  const messages = [
+    ...(booking.customer_email ? [{
+      from: fromEmail,
+      to: [booking.customer_email],
+      subject: `Bokningsbekräftelse #${number} – Avenyn Taxi`,
+      text: `Tack för din bokning hos Avenyn Taxi.\n\n${details}\n\nVi ses snart!`,
+    }] : []),
+    {
+      from: fromEmail,
+      to: [operatorEmail],
+      subject: `Ny bokning #${number} – Avenyn Taxi`,
+      text: `En ny bokning har registrerats.\n\n${details}`,
+    },
+  ];
+
+  for (const message of messages) {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(message),
+    });
+    if (!response.ok) console.error('Kunde inte skicka bokningsmejl:', response.status, await response.text());
+  }
+}
+
 function stockholmParts(date: Date) {
   const parts = new Intl.DateTimeFormat('sv-SE', {
     timeZone: 'Europe/Stockholm',
@@ -71,10 +122,11 @@ Deno.serve(async (req: Request) => {
         notes: body.notes ?? null,
         booked_by: ctx.userId,
       })
-      .select('id, booking_number, tracking_token, status')
+      .select('id, booking_number, tracking_token, status, customer_name, customer_phone, customer_email, pickup_address, dropoff_address, booking_date, pickup_time, passengers, car_type, estimated_price, fixed_price, actual_price')
       .single();
 
     if (bookingErr) return error(bookingErr.message, 500, 'db_error');
+    await sendBookingEmails(booking);
     return json({ booking_id: booking.id, booking_number: booking.booking_number, tracking_token: booking.tracking_token, status: booking.status });
   } catch (e) {
     if (e instanceof HttpError) return error(e.message, e.status, e.code);
