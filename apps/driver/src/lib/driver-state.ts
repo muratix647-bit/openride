@@ -19,6 +19,7 @@ export interface ActiveTrip {
   status: string;
   pickup_address: string;
   dropoff_address: string;
+  customer_phone: string | null;
   estimated_fare_cents: number | null;
   final_fare_cents: number | null;
 }
@@ -66,7 +67,7 @@ export function useDriverState(session: Session | null): DriverState {
         .maybeSingle(),
       supabase
         .from('bookings')
-        .select('id, status, pickup_address, dropoff_address, estimated_price, fixed_price, actual_price')
+        .select('id, status, pickup_address, dropoff_address, customer_phone, estimated_price, fixed_price, actual_price')
         .eq('driver_id', resolvedDriverId)
         .in('status', ['Tilldelad', 'På väg', 'Framme', 'Kund i bilen'])
         .order('updated_at', { ascending: false })
@@ -83,6 +84,7 @@ export function useDriverState(session: Session | null): DriverState {
       status: b.status === 'Tilldelad' ? 'assigned' : b.status === 'På väg' ? 'driver_en_route' : b.status === 'Framme' ? 'arrived_at_pickup' : 'in_progress',
       pickup_address: b.pickup_address,
       dropoff_address: b.dropoff_address,
+      customer_phone: b.customer_phone ?? null,
       estimated_fare_cents: b.fixed_price != null ? Math.round(Number(b.fixed_price) * 100) : b.estimated_price != null ? Math.round(Number(b.estimated_price) * 100) : null,
       final_fare_cents: b.actual_price != null ? Math.round(Number(b.actual_price) * 100) : null,
     } : null);
