@@ -38,6 +38,7 @@ export interface DriverState {
   loading: boolean;
   online: boolean;
   vehicleId: string | null;
+  driverId: string | null;
   activeTrip: ActiveTrip | null;
   pendingOffer: PendingOffer | null;
   refresh: () => Promise<void>;
@@ -76,15 +77,7 @@ export function useDriverState(session: Session | null): DriverState {
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle(),
-      supabase
-        .from('trip_offers')
-        .select('id, trip_id, responds_by, pickup_eta_s, distance_to_pickup_m, trips(pickup_address, dropoff_address, estimated_fare_cents)')
-        .eq('driver_id', driverId)
-        .eq('status', 'pending')
-        .gt('responds_by', nowIso)
-        .order('sent_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+      Promise.resolve({ data: null, error: null }),
     ]);
 
     const status = statusRes.data as { id?: string; is_online?: boolean; status?: string } | null;
@@ -158,7 +151,7 @@ export function useDriverState(session: Session | null): DriverState {
     await refresh();
   }, [activeTrip, driverId, refresh]);
 
-  return { loading, online, vehicleId, activeTrip, pendingOffer, refresh, goOnline, goOffline, tripEvent };
+  return { loading, online, vehicleId, driverId, activeTrip, pendingOffer, refresh, goOnline, goOffline, tripEvent };
 }
 
 /** Vehicles this driver can operate (their default vehicle(s)). */
