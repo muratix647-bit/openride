@@ -8,14 +8,6 @@ export interface CallerContext {
   role: string;
 }
 
-/**
- * Build two clients:
- *   - `client`: scoped to the caller's JWT. Use for any operation that should
- *     pass through RLS as that user.
- *   - `serviceClient`: service-role. Use for orchestrated writes that span
- *     ownership boundaries (e.g. assigning a trip). Caller MUST re-check
- *     authorisation before any privileged write.
- */
 export async function requireCaller(req: Request, allowedRoles?: string[]): Promise<CallerContext> {
   const authHeader = req.headers.get('authorization') ?? '';
   if (!authHeader.toLowerCase().startsWith('bearer ')) {
@@ -37,19 +29,30 @@ export async function requireCaller(req: Request, allowedRoles?: string[]): Prom
   const { data: userResult, error: userErr } = await client.auth.getUser();
   if (userErr || !userResult.user) throw new HttpError(401, 'Invalid token');
 
-  const { data: row, error: rowErr } = await serviceClient
-    .from('users')
-    .select('role')
-    .eq('id', userResult.user.id)
-    .maybeSingle();
-  if (rowErr) throw new HttpError(500, rowErr.message);
-  const role = (row as { role?: string } | null)?.role ?? 'rider';
+  const userId = userResult.user.id;
+  let role = 'rider';
+
+  const [{ data: admin }, { data: driver }] = await Promise.all([
+    serviceClient
+      .from('dispatch_admins')
+      .select('role, active')
+      .eq('auth_user_id', userId)
+      .maybeSingle(),
+    serviceClient
+      .from('drivers')
+      .select('active, approved, archived_at')
+      .eq('auth_user_id', userId)
+      .maybeSingle(),
+  ]);
+
+  if (admin?.active) role = admin.role === 'dispatcher' ? 'dispatcher' : 'admin';
+  else if (driver?.active && driver?.approved && !driver?.archived_at) role = 'driver';
 
   if (allowedRoles && !allowedRoles.includes(role)) {
     throw new HttpError(403, `Role '${role}' not permitted`);
   }
 
-  return { client, serviceClient, userId: userResult.user.id, role };
+  return { client, serviceClient, userId, role };
 }
 
 export class HttpError extends Error {
@@ -58,31 +61,25 @@ export class HttpError extends Error {
   }
 }
 
-/** The operator a user belongs to — used to stamp operator_id on service-role inserts. */
-export async function operatorOf(serviceClient: any, userId: string): Promise<string | null> {
-  const { data } = await serviceClient
-    .from('users')
-    .select('operator_id')
-    .eq('id', userId)
-    .maybeSingle();
-  return (data as { operator_id?: string } | null)?.operator_id ?? null;
+/**
+ * OpenRide used operator_id from public.users. Avenyn Taxi has no operator
+ * ownership layer, so adapted functions should not depend on this helper.
+ */
+export async function operatorOf(_serviceClient: any, _userId: string): Promise<null> {
+  return null;
 }
 
+/**
+ * Avenyn Taxi does not currently have OpenRide's audit_logs table.
+ * Keep this as a safe no-op until an Avenyn-specific activity log is introduced.
+ */
 export async function audit(
-  ctx: { serviceClient: any; userId: string; role: string },
-  action: string,
-  targetTable: string,
-  targetId: string,
-  before: unknown,
-  after: unknown,
+  _ctx: { serviceClient: any; userId: string; role: string },
+  _action: string,
+  _targetTable: string,
+  _targetId: string,
+  _before: unknown,
+  _after: unknown,
 ): Promise<void> {
-  await ctx.serviceClient.from('audit_logs').insert({
-    actor_id: ctx.userId,
-    actor_role: ctx.role,
-    action,
-    target_table: targetTable,
-    target_id: targetId,
-    before,
-    after,
-  });
+  return;
 }

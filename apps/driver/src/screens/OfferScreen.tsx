@@ -38,7 +38,7 @@ export function OfferScreen({ offer, onAccept, onDecline }: Props) {
     try {
       await fn(offer.trip_id);
     } catch (e) {
-      Alert.alert(`Could not ${label}`, (e as Error).message);
+      Alert.alert(`Kunde inte ${label}`, (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -46,18 +46,18 @@ export function OfferScreen({ offer, onAccept, onDecline }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'right', 'bottom', 'left']}>
-      <Text style={styles.countdown}>{expired ? 'Expired' : `${remaining}s`}</Text>
+      <Text style={styles.countdown}>{expired ? 'Utgången' : `${remaining}s`}</Text>
       {offer.pickup_eta_s != null ? (
         <Text style={styles.sub}>
-          {formatDurationS(offer.pickup_eta_s)} to pickup
+          {formatDurationS(offer.pickup_eta_s)} till hämtning
           {offer.distance_to_pickup_m != null ? ` · ${formatDistance(offer.distance_to_pickup_m)}` : ''}
         </Text>
       ) : null}
 
       <View style={styles.card}>
-        <Text style={styles.label}>Pickup</Text>
+        <Text style={styles.label}>Hämtas från</Text>
         <Text style={styles.value}>{trip?.pickup_address ?? '—'}</Text>
-        <Text style={[styles.label, { marginTop: spacing.md }]}>Dropoff</Text>
+        <Text style={[styles.label, { marginTop: spacing.md }]}>Destination</Text>
         <Text style={styles.value}>{trip?.dropoff_address ?? '—'}</Text>
         {trip?.estimated_fare_cents != null ? (
           <Text style={styles.fare}>{formatMoney(trip.estimated_fare_cents)}</Text>
@@ -70,14 +70,14 @@ export function OfferScreen({ offer, onAccept, onDecline }: Props) {
           onPress={() => act(onDecline, 'decline')}
           disabled={busy}
         >
-          <Text style={styles.buttonText}>Decline</Text>
+          <Text style={styles.buttonText}>Avböj</Text>
         </Pressable>
         <Pressable
           style={[styles.button, styles.accept, (expired || busy) && styles.disabled]}
           onPress={() => act(onAccept, 'accept')}
           disabled={expired || busy}
         >
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Accept</Text>}
+          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Acceptera</Text>}
         </Pressable>
       </View>
     </SafeAreaView>

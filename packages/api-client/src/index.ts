@@ -36,11 +36,17 @@ export interface CreateBookingRequest {
   passenger_count?: number;
   scheduled_pickup_at?: string;
   notes?: string;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_email?: string;
 }
 
 export interface BookingResponse {
   booking_id: string;
-  trip_id: string;
+  booking_number?: number;
+  tracking_token?: string;
+  status?: string;
+  trip_id?: string;
 }
 
 export class OpenrideApi {

@@ -1,10 +1,7 @@
-import { createBrowserClient, type OpenrideClient } from '@openride/db';
+import { createClient } from '@supabase/supabase-js';
 
 import { secureStorage } from './secure-storage';
 
-// Expo inlines EXPO_PUBLIC_* env vars into the bundle at build time.
-// Set them in apps/driver/.env.local (see .env.example), then restart
-// the bundler with `expo start --clear` so the new values are picked up.
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -15,6 +12,91 @@ if (!url || !anonKey) {
   );
 }
 
-// SecureStore-backed session storage so the driver stays signed in across
-// launches. Passed at construction — GoTrue reads it when the client is built.
-export const supabase: OpenrideClient = createBrowserClient({ url, anonKey, storage: secureStorage });
+type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
+  Row: Row;
+  Insert: Insert;
+  Update: Update;
+  Relationships: [];
+};
+
+type DriverRow = {
+  id: string;
+  auth_user_id: string | null;
+  full_name: string | null;
+  phone: string | null;
+  active: boolean;
+  approved: boolean | null;
+  is_online: boolean | null;
+  status: string | null;
+  archived_at: string | null;
+};
+
+type BookingRow = {
+  id: string;
+  driver_id: string | null;
+  status: string;
+  pickup_address: string;
+  dropoff_address: string | null;
+  customer_phone: string | null;
+  estimated_price: number | null;
+  fixed_price: number | null;
+  actual_price: number | null;
+  updated_at: string;
+  picked_up_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+};
+
+type DriverLocationRow = {
+  driver_id: string;
+  latitude: number;
+  longitude: number;
+  heading: number | null;
+  speed_kmh: number | null;
+  updated_at: string;
+};
+
+type VehicleRow = {
+  id: string;
+  driver_id: string | null;
+  registration_number: string | null;
+  reg: string | null;
+  make: string | null;
+  model: string | null;
+  vehicle_class: string | null;
+  active: boolean;
+};
+
+type IncidentReportRow = {
+  id: string;
+  reported_by: string;
+  driver_id: string | null;
+  category: string;
+  severity: string;
+  description: string;
+};
+
+type AvenynDatabase = {
+  public: {
+    Tables: {
+      drivers: Table<DriverRow>;
+      bookings: Table<BookingRow>;
+      driver_locations: Table<DriverLocationRow, DriverLocationRow>;
+      vehicles: Table<VehicleRow>;
+      incident_reports: Table<IncidentReportRow, Omit<IncidentReportRow, 'id'>>;
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};
+
+export const supabase = createClient<AvenynDatabase>(url, anonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+    storage: secureStorage,
+  },
+});

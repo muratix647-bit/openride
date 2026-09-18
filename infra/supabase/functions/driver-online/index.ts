@@ -1,10 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { handleCors, error, json } from '../_shared/cors.ts';
-import { HttpError, audit, operatorOf, requireCaller } from '../_shared/auth.ts';
+import { HttpError, requireCaller } from '../_shared/auth.ts';
 
-interface Body {
-  vehicle_id: string;
-}
+interface Body { vehicle_id?: string }
 
 Deno.serve(async (req: Request) => {
   const pre = handleCors(req);
@@ -14,68 +12,58 @@ Deno.serve(async (req: Request) => {
   try {
     const ctx = await requireCaller(req, ['driver']);
     const body = (await req.json()) as Body;
-    if (!body?.vehicle_id) return error('vehicle_id is required');
 
     const { data: driver, error: dErr } = await ctx.serviceClient
-      .from('driver_profiles')
-      .select('user_id, status, fatigue_locked_until')
-      .eq('user_id', ctx.userId)
+      .from('drivers')
+      .select('id, approved, active, archived_at')
+      .eq('auth_user_id', ctx.userId)
       .maybeSingle();
+
     if (dErr) return error(dErr.message, 500, 'db_error');
-    if (!driver) return error('Driver profile not found', 404);
-    const d = driver as any;
-    if (d.status !== 'approved') return error('Driver not approved', 403, 'not_approved');
-    if (d.fatigue_locked_until && new Date(d.fatigue_locked_until) > new Date()) {
-      return error('Driver is fatigue-locked', 403, 'fatigue_locked');
+    if (!driver) return error('Föraren är inte kopplad till detta konto', 404, 'driver_not_linked');
+    if (!driver.active || !driver.approved || driver.archived_at) {
+      return error('Förarkontot är inte godkänt eller aktivt', 403, 'not_approved');
     }
 
-    const { data: vehicle, error: vErr } = await ctx.serviceClient
-      .from('vehicles')
-      .select('id, status')
-      .eq('id', body.vehicle_id)
-      .maybeSingle();
-    if (vErr) return error(vErr.message, 500, 'db_error');
-    if (!vehicle || (vehicle as any).status !== 'active') {
-      return error('Vehicle not active', 400, 'vehicle_inactive');
+    if (body.vehicle_id) {
+      const { data: vehicle, error: vehicleErr } = await ctx.serviceClient
+        .from('vehicles')
+        .select('id, driver_id, active')
+        .eq('id', body.vehicle_id)
+        .eq('active', true)
+        .maybeSingle();
+
+      if (vehicleErr) return error(vehicleErr.message, 500, 'db_error');
+      if (!vehicle) return error('Fordonet finns inte eller är inaktivt', 404, 'vehicle_not_available');
+      if (vehicle.driver_id && vehicle.driver_id !== driver.id) {
+        return error('Fordonet är tilldelat en annan förare', 403, 'vehicle_assigned_to_other_driver');
+      }
     }
 
-    // Close any open shift first (idempotent)
-    await ctx.serviceClient
-      .from('driver_status')
-      .update({ ended_at: new Date().toISOString() })
-      .eq('driver_id', ctx.userId)
-      .is('ended_at', null);
-
-    const operatorId = await operatorOf(ctx.serviceClient, ctx.userId);
-    const { data: shift, error: sErr } = await ctx.serviceClient
-      .from('driver_status')
-      .insert({
-        driver_id: ctx.userId,
-        operator_id: operatorId,
-        status: 'online',
-        vehicle_id: body.vehicle_id,
+    const now = new Date().toISOString();
+    const { error: uErr } = await ctx.serviceClient
+      .from('drivers')
+      .update({
+        is_online: true,
+        status: 'Tillgänglig',
+        availability_status: 'available',
+        updated_at: now,
       })
-      .select('*')
-      .single();
-    if (sErr) return error(sErr.message, 500, 'db_error');
+      .eq('id', driver.id);
 
-    await audit(ctx, 'driver.online', 'driver_status', (shift as any).id, null, shift);
+    if (uErr) return error(uErr.message, 500, 'db_error');
 
-    // Open a fatigue session for the shift if none is open. Drive time
-    // accumulates here on trip completion; lockout is enforced by trigger.
-    const { data: openSession } = await ctx.serviceClient
-      .from('fatigue_sessions')
-      .select('id')
-      .eq('driver_id', ctx.userId)
-      .is('ended_at', null)
-      .maybeSingle();
-    if (!openSession) {
-      await ctx.serviceClient
-        .from('fatigue_sessions')
-        .insert({ driver_id: ctx.userId, operator_id: operatorId });
+    if (body.vehicle_id) {
+      const { error: vehicleUpdateErr } = await ctx.serviceClient
+        .from('vehicles')
+        .update({ driver_id: driver.id, updated_at: now })
+        .eq('id', body.vehicle_id)
+        .eq('active', true);
+
+      if (vehicleUpdateErr) return error(vehicleUpdateErr.message, 500, 'db_error');
     }
 
-    return json({ ok: true });
+    return json({ ok: true, driver_id: driver.id });
   } catch (e) {
     if (e instanceof HttpError) return error(e.message, e.status, e.code);
     return error((e as Error).message, 500, 'unexpected');

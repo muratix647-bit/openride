@@ -25,7 +25,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 const VEHICLE_TYPES = [
   { key: 'sedan', label: 'Sedan' },
-  { key: 'wheelchair_accessible', label: 'Wheelchair' },
+  { key: 'wheelchair_accessible', label: 'Rullstolsanpassad' },
 ] as const;
 
 export function HomeScreen({ displayName }: { displayName?: string | null }) {
@@ -33,6 +33,9 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
   const [pickup, setPickup] = useState<Place | null>(null);
   const [dropoff, setDropoff] = useState<Place | null>(null);
   const [vehicleType, setVehicleType] = useState<string>('sedan');
+  const [customerName, setCustomerName] = useState(displayName ?? '');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Place[]>([]);
   const [estimate, setEstimate] = useState<FareEstimateResponse | null>(null);
@@ -41,7 +44,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
   const [booking, setBooking] = useState(false);
   const searchSeq = useRef(0);
 
-  // Pickup = current location.
+  // Hämtas från = current location.
   useEffect(() => {
     let active = true;
     (async () => {
@@ -57,7 +60,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
           setPickup({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
-            label: label ?? 'Current location',
+            label: label ?? 'Min position',
           });
         }
       } catch {
@@ -85,7 +88,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
         if (seq === searchSeq.current) setResults(places);
       } catch (e) {
         if (seq === searchSeq.current) setResults([]);
-        if (!hasGeocoder()) Alert.alert('Search unavailable', (e as Error).message);
+        if (!hasGeocoder()) Alert.alert('Adressökning är inte tillgänglig', (e as Error).message);
       }
     }, 350);
     return () => clearTimeout(handle);
@@ -100,29 +103,40 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
         pickup: { lat: pickup.lat, lng: pickup.lng },
         dropoff: { lat: dropoff.lat, lng: dropoff.lng },
         vehicle_type: vehicleType,
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim(),
+        customer_email: customerEmail.trim(),
       });
       setEstimate(e);
     } catch (e) {
-      Alert.alert('Could not estimate fare', (e as Error).message);
+      Alert.alert('Kunde inte beräkna pris', (e as Error).message);
     } finally {
       setEstimating(false);
     }
-  }, [pickup, dropoff, vehicleType]);
+  }, [pickup, dropoff, vehicleType, customerName, customerPhone, customerEmail]);
 
   const onAddCard = useCallback(async () => {
     try {
       const { url } = await api.setupCard();
       if (url) await Linking.openURL(url);
     } catch (e) {
-      Alert.alert('Add card', (e as Error).message);
+      Alert.alert('Lägg till kort', (e as Error).message);
     }
   }, []);
 
   const onBook = useCallback(async () => {
     if (!pickup || !dropoff) return;
+    if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
+      Alert.alert('Kontaktuppgifter krävs', 'Fyll i namn, mobilnummer och e-postadress.');
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(customerEmail.trim())) {
+      Alert.alert('Kontrollera e-postadressen', 'Ange en giltig e-postadress.');
+      return;
+    }
     setBooking(true);
     try {
-      const { trip_id } = await api.createBooking({
+      const { booking_id } = await api.createBooking({
         type: 'now',
         pickup: { lat: pickup.lat, lng: pickup.lng },
         pickup_label: pickup.label,
@@ -130,47 +144,54 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
         dropoff_label: dropoff.label,
         vehicle_type: vehicleType,
       });
-      navigation.navigate('Trip', { tripId: trip_id });
+      navigation.navigate('Trip', { tripId: booking_id });
     } catch (e) {
-      Alert.alert('Could not book', (e as Error).message);
+      Alert.alert('Kunde inte boka', (e as Error).message);
     } finally {
       setBooking(false);
     }
-  }, [pickup, dropoff, vehicleType, navigation]);
+  }, [pickup, dropoff, vehicleType, customerName, customerPhone, customerEmail, navigation]);
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.hi}>Hi{displayName ? `, ${displayName}` : ''} 👋</Text>
+        <Text style={styles.hi}>Hej{displayName ? `, ${displayName}` : ''} 👋</Text>
         <View style={styles.headerLinks}>
           <Pressable onPress={() => navigation.navigate('Receipts')} hitSlop={8}>
-            <Text style={styles.link}>Receipts</Text>
+            <Text style={styles.link}>Kvitton</Text>
           </Pressable>
           <Pressable onPress={onAddCard} hitSlop={8}>
-            <Text style={styles.link}>Add card</Text>
+            <Text style={styles.link}>Lägg till kort</Text>
           </Pressable>
           <Pressable onPress={() => navigation.navigate('ReportIncident')} hitSlop={8}>
-            <Text style={styles.link}>Help</Text>
+            <Text style={styles.link}>Hjälp</Text>
           </Pressable>
           <Pressable onPress={() => void signOut()} hitSlop={8}>
-            <Text style={styles.signOut}>Sign out</Text>
+            <Text style={styles.signOut}>Logga ut</Text>
           </Pressable>
         </View>
       </View>
 
-      <Text style={styles.label}>Pickup</Text>
+      <Text style={styles.label}>Namn</Text>
+      <TextInput style={styles.input} placeholder="För- och efternamn" value={customerName} onChangeText={setCustomerName} autoCapitalize="words" />
+      <Text style={styles.label}>Mobilnummer</Text>
+      <TextInput style={styles.input} placeholder="+46 70 000 00 00" value={customerPhone} onChangeText={setCustomerPhone} keyboardType="phone-pad" />
+      <Text style={styles.label}>E-post</Text>
+      <TextInput style={styles.input} placeholder="namn@exempel.se" value={customerEmail} onChangeText={setCustomerEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
+
+      <Text style={styles.label}>Hämtas från</Text>
       <View style={styles.fieldBox}>
         {locating ? (
           <ActivityIndicator />
         ) : (
-          <Text style={styles.fieldText}>{pickup?.label ?? 'Location unavailable'}</Text>
+          <Text style={styles.fieldText}>{pickup?.label ?? 'Position ej tillgänglig'}</Text>
         )}
       </View>
 
-      <Text style={styles.label}>Where to?</Text>
+      <Text style={styles.label}>Vart vill du åka?</Text>
       <TextInput
         style={styles.input}
-        placeholder="Search destination"
+        placeholder="Sök destination"
         value={query}
         onChangeText={(t) => {
           setQuery(t);
@@ -200,7 +221,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
         />
       ) : null}
 
-      <Text style={styles.label}>Vehicle</Text>
+      <Text style={styles.label}>Fordon</Text>
       <View style={styles.vehicleRow}>
         {VEHICLE_TYPES.map((v) => (
           <Pressable
@@ -234,11 +255,15 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
             onPress={onGetEstimate}
             disabled={!pickup || !dropoff || estimating}
           >
-            <Text style={styles.buttonText}>{estimating ? 'Estimating…' : 'Get fare estimate'}</Text>
+            <Text style={styles.buttonText}>{estimating ? 'Beräknar…' : 'Visa pris'}</Text>
           </Pressable>
         ) : (
-          <Pressable style={styles.button} onPress={onBook} disabled={booking}>
-            <Text style={styles.buttonText}>{booking ? 'Booking…' : 'Book now'}</Text>
+          <Pressable
+            style={[styles.button, (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) && styles.disabled]}
+            onPress={onBook}
+            disabled={booking || !customerName.trim() || !customerPhone.trim() || !customerEmail.trim()}
+          >
+            <Text style={styles.buttonText}>{booking ? 'Bokar…' : 'Boka nu'}</Text>
           </Pressable>
         )}
       </View>

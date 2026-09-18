@@ -1,4 +1,4 @@
-import { colors, formatMoney, spacing, typography } from '@openride/ui';
+import { colors, spacing, typography } from '@openride/ui';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
@@ -8,20 +8,22 @@ interface Receipt {
   id: string;
   status: string;
   pickup_address: string;
-  dropoff_address: string;
-  final_fare_cents: number | null;
-  estimated_fare_cents: number | null;
+  dropoff_address: string | null;
+  actual_price: number | null;
+  fixed_price: number | null;
+  estimated_price: number | null;
   payment_status: string;
   completed_at: string | null;
 }
 
 const PAYMENT_LABEL: Record<string, string> = {
-  paid: 'Paid',
-  pending: 'Payment pending',
-  authorised: 'Authorised',
-  failed: 'Payment failed',
-  refunded: 'Refunded',
-  waived: 'Waived',
+  unpaid: 'Obetald',
+  paid: 'Betald',
+  pending: 'Betalning väntar',
+  authorised: 'Godkänd',
+  failed: 'Betalningen misslyckades',
+  refunded: 'Återbetald',
+  waived: 'Ingen betalning',
 };
 
 export function ReceiptsScreen() {
@@ -31,9 +33,9 @@ export function ReceiptsScreen() {
   useEffect(() => {
     let active = true;
     void supabase
-      .from('trips')
-      .select('id, status, pickup_address, dropoff_address, final_fare_cents, estimated_fare_cents, payment_status, completed_at')
-      .in('status', ['completed', 'cancelled', 'no_show'])
+      .from('bookings')
+      .select('id, status, pickup_address, dropoff_address, actual_price, fixed_price, estimated_price, payment_status, completed_at')
+      .in('status', ['Slutförd', 'Avbokad'])
       .order('completed_at', { ascending: false, nullsFirst: false })
       .limit(50)
       .then(({ data }) => {
@@ -60,21 +62,21 @@ export function ReceiptsScreen() {
       contentContainerStyle={{ padding: spacing.lg }}
       data={receipts}
       keyExtractor={(r) => r.id}
-      ListEmptyComponent={<Text style={styles.muted}>No past trips yet.</Text>}
+      ListEmptyComponent={<Text style={styles.muted}>Du har inga tidigare resor ännu.</Text>}
       renderItem={({ item }) => {
-        const fare = item.final_fare_cents ?? item.estimated_fare_cents;
+        const fare = item.actual_price ?? item.fixed_price ?? item.estimated_price;
         return (
           <View style={styles.row}>
             <View style={styles.flex}>
               <Text style={styles.route} numberOfLines={1}>
-                {item.pickup_address} → {item.dropoff_address}
+                {item.pickup_address} → {item.dropoff_address ?? '—'}
               </Text>
               <Text style={styles.meta}>
                 {item.completed_at ? new Date(item.completed_at).toLocaleDateString() : item.status} ·{' '}
                 {PAYMENT_LABEL[item.payment_status] ?? item.payment_status}
               </Text>
             </View>
-            <Text style={styles.fare}>{fare != null ? formatMoney(fare) : '—'}</Text>
+            <Text style={styles.fare}>{fare != null ? `${fare} kr` : '—'}</Text>
           </View>
         );
       }}

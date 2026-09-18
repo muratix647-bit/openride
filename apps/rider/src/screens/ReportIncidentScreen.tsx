@@ -6,12 +6,12 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { supabase } from '../lib/supabase';
 
 const CATEGORIES = [
-  { key: 'safety', label: 'Safety' },
-  { key: 'vehicle_damage', label: 'Vehicle damage' },
-  { key: 'abuse', label: 'Abuse' },
-  { key: 'payment_dispute', label: 'Payment' },
-  { key: 'medical', label: 'Medical' },
-  { key: 'other', label: 'Other' },
+  { key: 'safety', label: 'Säkerhet' },
+  { key: 'vehicle_damage', label: 'Fordonsskada' },
+  { key: 'abuse', label: 'Olämpligt beteende' },
+  { key: 'payment_dispute', label: 'Betalning' },
+  { key: 'medical', label: 'Medicinskt' },
+  { key: 'other', label: 'Övrigt' },
 ] as const;
 
 const HIGH = new Set(['safety', 'medical', 'abuse']);
@@ -27,7 +27,7 @@ export function ReportIncidentScreen() {
     try {
       const { data: u } = await supabase.auth.getUser();
       const id = u.user?.id;
-      if (!id) throw new Error('Not signed in');
+      if (!id) throw new Error('Du är inte inloggad');
       const { error } = await supabase.from('incident_reports').insert({
         reported_by: id,
         rider_id: id,
@@ -36,10 +36,10 @@ export function ReportIncidentScreen() {
         description: description.trim(),
       });
       if (error) throw error;
-      Alert.alert('Thank you', 'Your report has been submitted.');
+      Alert.alert('Tack', 'Din rapport har skickats.');
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Could not submit', (e as Error).message);
+      Alert.alert('Kunde inte skicka rapporten', (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -47,7 +47,7 @@ export function ReportIncidentScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>What happened?</Text>
+      <Text style={styles.label}>Vad har hänt?</Text>
       <View style={styles.chips}>
         {CATEGORIES.map((c) => (
           <Pressable
@@ -60,10 +60,10 @@ export function ReportIncidentScreen() {
         ))}
       </View>
 
-      <Text style={styles.label}>Describe it</Text>
+      <Text style={styles.label}>Beskriv händelsen</Text>
       <TextInput
         style={styles.input}
-        placeholder="Tell us what happened…"
+        placeholder="Berätta vad som hände…"
         value={description}
         onChangeText={setDescription}
         multiline
@@ -76,7 +76,7 @@ export function ReportIncidentScreen() {
         onPress={submit}
         disabled={busy || description.trim().length < 5}
       >
-        <Text style={styles.buttonText}>{busy ? 'Submitting…' : 'Submit report'}</Text>
+        <Text style={styles.buttonText}>{busy ? 'Skickar…' : 'Skicka rapport'}</Text>
       </Pressable>
     </View>
   );

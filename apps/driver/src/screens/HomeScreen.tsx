@@ -12,10 +12,10 @@ interface Props {
   online: boolean;
   onGoOnline: (vehicleId: string) => Promise<void>;
   onGoOffline: () => Promise<void>;
-  onReport: () => void;
+  onRapportera: () => void;
 }
 
-export function HomeScreen({ driverId, displayName, online, onGoOnline, onGoOffline, onReport }: Props) {
+export function HomeScreen({ driverId, displayName, online, onGoOnline, onGoOffline, onRapportera }: Props) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -38,11 +38,11 @@ export function HomeScreen({ driverId, displayName, online, onGoOnline, onGoOffl
       if (online) {
         await onGoOffline();
       } else {
-        if (!selected) throw new Error('Add an active vehicle before going online.');
+        if (!selected) throw new Error('Lägg till ett aktivt fordon innan du går online.');
         await onGoOnline(selected);
       }
     } catch (e) {
-      Alert.alert(online ? 'Could not go offline' : 'Could not go online', (e as Error).message);
+      Alert.alert(online ? 'Kunde inte gå offline' : 'Kunde inte gå online', (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -51,13 +51,13 @@ export function HomeScreen({ driverId, displayName, online, onGoOnline, onGoOffl
   return (
     <SafeAreaView style={styles.container} edges={['top', 'right', 'bottom', 'left']}>
       <View style={styles.header}>
-        <Text style={styles.hi}>{displayName ?? 'Driver'}</Text>
+        <Text style={styles.hi}>{displayName ?? 'Förare'}</Text>
         <View style={styles.headerLinks}>
-          <Pressable onPress={onReport} hitSlop={8}>
-            <Text style={styles.link}>Report</Text>
+          <Pressable onPress={onRapportera} hitSlop={8}>
+            <Text style={styles.link}>Rapportera</Text>
           </Pressable>
           <Pressable onPress={() => void signOut()} hitSlop={8}>
-            <Text style={styles.signOut}>Sign out</Text>
+            <Text style={styles.signOut}>Logga ut</Text>
           </Pressable>
         </View>
       </View>
@@ -66,14 +66,14 @@ export function HomeScreen({ driverId, displayName, online, onGoOnline, onGoOffl
         <Text style={styles.statusText}>{online ? 'Online' : 'Offline'}</Text>
       </View>
 
-      <Text style={styles.headline}>{online ? 'Waiting for an offer…' : 'You are offline'}</Text>
+      <Text style={styles.headline}>{online ? 'Väntar på körning…' : 'Du är offline'}</Text>
 
       {!online ? (
         <>
-          <Text style={styles.label}>Vehicle</Text>
+          <Text style={styles.label}>Fordon</Text>
           {vehicles.length === 0 ? (
             <Text style={styles.muted}>
-              No active vehicle assigned to you. An admin needs to add one before you can go online.
+              Inget aktivt fordon är tilldelat. Dispatch måste lägga till ett fordon innan du kan gå online.
             </Text>
           ) : (
             vehicles.map((v) => (
@@ -92,7 +92,7 @@ export function HomeScreen({ driverId, displayName, online, onGoOnline, onGoOffl
         </>
       ) : (
         <Text style={styles.muted}>
-          Your location is shared while online (foreground). Offers will appear here automatically.
+          Din position delas när du är online. Nya körningar visas automatiskt här.
         </Text>
       )}
 
@@ -105,7 +105,7 @@ export function HomeScreen({ driverId, displayName, online, onGoOnline, onGoOffl
           {busy ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>{online ? 'Go offline' : 'Go online'}</Text>
+            <Text style={styles.buttonText}>{online ? 'Gå offline' : 'Gå online'}</Text>
           )}
         </Pressable>
       </View>
