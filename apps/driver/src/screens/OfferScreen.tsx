@@ -7,11 +7,11 @@ import type { PendingOffer } from '../lib/driver-state';
 
 interface Props {
   offer: PendingOffer;
-  onAccept: (tripId: string) => Promise<void>;
-  onDecline: (tripId: string) => Promise<void>;
+  onAcceptera: (tripId: string) => Promise<void>;
+  onAvböj: (tripId: string) => Promise<void>;
 }
 
-export function OfferScreen({ offer, onAccept, onDecline }: Props) {
+export function OfferScreen({ offer, onAcceptera, onAvböj }: Props) {
   const [remaining, setRemaining] = useState(() => secsUntil(offer.responds_by));
   const [busy, setBusy] = useState(false);
   const expiredHandled = useRef(false);
@@ -29,16 +29,16 @@ export function OfferScreen({ offer, onAccept, onDecline }: Props) {
   useEffect(() => {
     if (expired && !expiredHandled.current && !busy) {
       expiredHandled.current = true;
-      void onDecline(offer.trip_id).catch(() => {});
+      void onAvböj(offer.trip_id).catch(() => {});
     }
-  }, [expired, busy, offer.trip_id, onDecline]);
+  }, [expired, busy, offer.trip_id, onAvböj]);
 
   async function act(fn: (id: string) => Promise<void>, label: string): Promise<void> {
     setBusy(true);
     try {
       await fn(offer.trip_id);
     } catch (e) {
-      Alert.alert(`Could not ${label}`, (e as Error).message);
+      Alert.alert(`Kunde inte ${label}`, (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -46,18 +46,18 @@ export function OfferScreen({ offer, onAccept, onDecline }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'right', 'bottom', 'left']}>
-      <Text style={styles.countdown}>{expired ? 'Expired' : `${remaining}s`}</Text>
+      <Text style={styles.countdown}>{expired ? 'Utgången' : `${remaining}s`}</Text>
       {offer.pickup_eta_s != null ? (
         <Text style={styles.sub}>
-          {formatDurationS(offer.pickup_eta_s)} to pickup
+          {formatDurationS(offer.pickup_eta_s)} till hämtning
           {offer.distance_to_pickup_m != null ? ` · ${formatDistance(offer.distance_to_pickup_m)}` : ''}
         </Text>
       ) : null}
 
       <View style={styles.card}>
-        <Text style={styles.label}>Pickup</Text>
+        <Text style={styles.label}>Hämtas från</Text>
         <Text style={styles.value}>{trip?.pickup_address ?? '—'}</Text>
-        <Text style={[styles.label, { marginTop: spacing.md }]}>Dropoff</Text>
+        <Text style={[styles.label, { marginTop: spacing.md }]}>Destination</Text>
         <Text style={styles.value}>{trip?.dropoff_address ?? '—'}</Text>
         {trip?.estimated_fare_cents != null ? (
           <Text style={styles.fare}>{formatMoney(trip.estimated_fare_cents)}</Text>
@@ -67,17 +67,17 @@ export function OfferScreen({ offer, onAccept, onDecline }: Props) {
       <View style={styles.actions}>
         <Pressable
           style={[styles.button, styles.decline]}
-          onPress={() => act(onDecline, 'decline')}
+          onPress={() => act(onAvböj, 'decline')}
           disabled={busy}
         >
-          <Text style={styles.buttonText}>Decline</Text>
+          <Text style={styles.buttonText}>Avböj</Text>
         </Pressable>
         <Pressable
           style={[styles.button, styles.accept, (expired || busy) && styles.disabled]}
-          onPress={() => act(onAccept, 'accept')}
+          onPress={() => act(onAcceptera, 'accept')}
           disabled={expired || busy}
         >
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Accept</Text>}
+          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Acceptera</Text>}
         </Pressable>
       </View>
     </SafeAreaView>
