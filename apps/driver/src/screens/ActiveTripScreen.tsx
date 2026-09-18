@@ -63,7 +63,7 @@ export function ActiveTripScreen({ trip, onEvent }: Props) {
   }
 
   const inProgress = trip.status === 'in_progress';
-  const target = inProgress ? trip.dropoff_address : trip.pickup_address;
+  const target = inProgress ? (trip.dropoff_address ?? '') : trip.pickup_address;
   const fareCents = trip.final_fare_cents ?? trip.estimated_fare_cents;
 
   return (
