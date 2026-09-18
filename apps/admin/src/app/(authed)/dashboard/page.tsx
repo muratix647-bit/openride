@@ -1,6 +1,6 @@
 import { getSupabaseServer } from '@/lib/supabase-server';
 
-export default async function DashboardPage() {
+export default async function ÖversiktPage() {
   const supabase = await getSupabaseServer();
 
   const [{ count: driverCount }, { count: vehicleCount }, { count: tripCount }] = await Promise.all([
@@ -10,14 +10,14 @@ export default async function DashboardPage() {
   ]);
 
   const kpis = [
-    { label: 'Drivers', value: driverCount ?? 0 },
-    { label: 'Vehicles', value: vehicleCount ?? 0 },
-    { label: 'Trips (all-time)', value: tripCount ?? 0 },
+    { label: 'Förare', value: driverCount ?? 0 },
+    { label: 'Fordon', value: vehicleCount ?? 0 },
+    { label: 'Körningar totalt', value: tripCount ?? 0 },
   ];
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-semibold mb-6">Översikt</h1>
       <div className="grid grid-cols-3 gap-4 max-w-3xl">
         {kpis.map((k) => (
           <div key={k.label} className="bg-white border rounded-lg p-4">
@@ -27,8 +27,7 @@ export default async function DashboardPage() {
         ))}
       </div>
       <p className="mt-8 text-sm text-gray-500">
-        Live ops map, booking queue, and KPIs land in Phase 5. This stub confirms the auth and DB
-        wiring works end-to-end.
+        Avenyn Taxi – trafikledning, förare, fordon och körningar.
       </p>
     </div>
   );
