@@ -1,4 +1,5 @@
-import { createBrowserClient, type OpenrideClient } from '@openride/db';
+import { createBrowserClient } from '@openride/db';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { secureStorage } from './secure-storage';
 
@@ -17,4 +18,7 @@ if (!url || !anonKey) {
 
 // SecureStore-backed session storage so the driver stays signed in across
 // launches. Passed at construction — GoTrue reads it when the client is built.
-export const supabase: OpenrideClient = createBrowserClient({ url, anonKey, storage: secureStorage });
+// Avenyn Taxi uses the existing production schema, which intentionally differs
+// from OpenRide's generated database types while the adaptation is in progress.
+// Runtime access remains protected by Supabase Auth + RLS.
+export const supabase: SupabaseClient<any> = createBrowserClient({ url, anonKey, storage: secureStorage }) as SupabaseClient<any>;
