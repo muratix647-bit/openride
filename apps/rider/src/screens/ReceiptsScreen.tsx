@@ -16,12 +16,12 @@ interface Receipt {
 }
 
 const PAYMENT_LABEL: Record<string, string> = {
-  paid: 'Paid',
-  pending: 'Payment pending',
-  authorised: 'Authorised',
-  failed: 'Payment failed',
-  refunded: 'Refunded',
-  waived: 'Waived',
+  paid: 'Betald',
+  pending: 'Betalning väntar',
+  authorised: 'Godkänd',
+  failed: 'Betalningen misslyckades',
+  refunded: 'Återbetald',
+  waived: 'Ingen betalning',
 };
 
 export function ReceiptsScreen() {
@@ -60,7 +60,7 @@ export function ReceiptsScreen() {
       contentContainerStyle={{ padding: spacing.lg }}
       data={receipts}
       keyExtractor={(r) => r.id}
-      ListEmptyComponent={<Text style={styles.muted}>No past trips yet.</Text>}
+      ListEmptyComponent={<Text style={styles.muted}>Du har inga tidigare resor ännu.</Text>}
       renderItem={({ item }) => {
         const fare = item.final_fare_cents ?? item.estimated_fare_cents;
         return (
