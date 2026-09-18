@@ -1,5 +1,4 @@
 import { createBrowserClient } from '@openride/db';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { secureStorage } from './secure-storage';
 
@@ -21,10 +20,8 @@ if (!url || !anonKey) {
 // Avenyn Taxi uses the existing production schema, which intentionally differs
 // from OpenRide's generated database types while the adaptation is in progress.
 // Runtime access remains protected by Supabase Auth + RLS.
-type AvenynSchema = Record<string, unknown>;
-
 export const supabase = createBrowserClient({
   url,
   anonKey,
   storage: secureStorage,
-}) as unknown as SupabaseClient<AvenynSchema>;
+});
