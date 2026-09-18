@@ -20,16 +20,16 @@ interface TripRow {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  scheduled: 'Scheduled',
-  requested: 'Finding you a driver…',
-  requires_manual_dispatch: 'Finding you a driver…',
-  assigned: 'Driver assigned',
-  driver_en_route: 'Driver on the way',
-  arrived_at_pickup: 'Your driver has arrived',
-  in_progress: 'On the trip',
-  completed: 'Trip complete',
-  cancelled: 'Trip cancelled',
-  no_show: 'No show',
+  scheduled: 'Förbokad',
+  requested: 'Söker efter en förare…',
+  requires_manual_dispatch: 'Söker efter en förare…',
+  assigned: 'Förare tilldelad',
+  driver_en_route: 'Föraren är på väg',
+  arrived_at_pickup: 'Din förare är framme',
+  in_progress: 'Resan pågår',
+  completed: 'Resan är avslutad',
+  cancelled: 'Resan är avbokad',
+  no_show: 'Kunden kom inte',
 };
 
 const ACTIVE = new Set(['requested', 'requires_manual_dispatch', 'scheduled', 'assigned', 'driver_en_route', 'arrived_at_pickup', 'in_progress']);
@@ -79,7 +79,7 @@ export function TripScreen({ route }: Props) {
   if (!trip) {
     return (
       <View style={styles.center}>
-        <Text style={styles.muted}>Trip not found.</Text>
+        <Text style={styles.muted}>Resan hittades inte.</Text>
       </View>
     );
   }
@@ -99,28 +99,27 @@ export function TripScreen({ route }: Props) {
       <View style={styles.row}>
         <Text style={styles.dot}>●</Text>
         <View style={styles.flex}>
-          <Text style={styles.label}>Pickup</Text>
+          <Text style={styles.label}>Hämtas från</Text>
           <Text style={styles.value}>{trip.pickup_address}</Text>
         </View>
       </View>
       <View style={styles.row}>
         <Text style={[styles.dot, { color: colors.brand }]}>◆</Text>
         <View style={styles.flex}>
-          <Text style={styles.label}>Dropoff</Text>
+          <Text style={styles.label}>Destination</Text>
           <Text style={styles.value}>{trip.dropoff_address}</Text>
         </View>
       </View>
 
       {fareCents != null ? (
         <View style={styles.fareRow}>
-          <Text style={styles.label}>{trip.final_fare_cents != null ? 'Fare' : 'Estimated fare'}</Text>
+          <Text style={styles.label}>{trip.final_fare_cents != null ? 'Pris' : 'Beräknat pris'}</Text>
           <Text style={styles.fare}>{formatMoney(fareCents)}</Text>
         </View>
       ) : null}
 
       <Text style={styles.note}>
-        Live driver tracking appears here once a driver accepts (Phase 3–4). This screen updates in
-        realtime as the trip status changes.
+        Resans status uppdateras automatiskt i realtid.
       </Text>
     </View>
   );
