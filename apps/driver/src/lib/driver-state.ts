@@ -73,8 +73,7 @@ export function useDriverState(session: Session | null): DriverState {
         .in('status', ['Tilldelad', 'På väg', 'Framme', 'Kund i bilen'])
         .order('updated_at', { ascending: false })
         .limit(1)
-        .maybeSingle(),
-      Promise.resolve({ data: null, error: null }),
+        .maybeSingle()
     ]);
 
     const status = statusRes.data as { id?: string; is_online?: boolean; status?: string } | null;
