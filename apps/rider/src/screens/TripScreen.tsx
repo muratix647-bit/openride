@@ -18,6 +18,12 @@ interface DriverLocation {
   updated_at: string;
 }
 
+interface AssignedDriver {
+  full_name: string;
+  phone: string | null;
+  vehicle: { registration_number: string | null; make: string | null; model: string | null } | null;
+}
+
 interface TripRow {
   id: string;
   status: string;
@@ -48,6 +54,7 @@ export function TripScreen({ route }: Props) {
   const [trip, setTrip] = useState<TripRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
+  const [assignedDriver, setAssignedDriver] = useState<AssignedDriver | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -78,6 +85,22 @@ export function TripScreen({ route }: Props) {
       void supabase.removeChannel(channel);
     };
   }, [tripId]);
+
+  useEffect(() => {
+    if (!trip?.driver_id || !ACTIVE.has(trip.status)) {
+      setAssignedDriver(null);
+      return;
+    }
+    const driverId = trip.driver_id;
+    void Promise.all([
+      supabase.from('drivers').select('full_name, phone').eq('id', driverId).maybeSingle(),
+      supabase.from('vehicles').select('registration_number, make, model').eq('driver_id', driverId).eq('active', true).limit(1).maybeSingle(),
+    ]).then(([driverRes, vehicleRes]) => {
+      const driver = driverRes.data as { full_name: string; phone: string | null } | null;
+      if (!driver) return setAssignedDriver(null);
+      setAssignedDriver({ ...driver, vehicle: vehicleRes.data as AssignedDriver['vehicle'] });
+    });
+  }, [trip?.driver_id, trip?.status]);
 
   useEffect(() => {
     if (!trip?.driver_id || !ACTIVE.has(trip.status)) {
@@ -139,6 +162,18 @@ export function TripScreen({ route }: Props) {
         <Text style={styles.statusText}>{STATUS_LABEL[trip.status] ?? trip.status}</Text>
       </View>
 
+      {assignedDriver && isActive ? (
+        <View style={styles.driverCard}>
+          <Text style={styles.driverTitle}>Din förare</Text>
+          <Text style={styles.driverName}>{assignedDriver.full_name}</Text>
+          {assignedDriver.vehicle ? (
+            <Text style={styles.muted}>
+              {[assignedDriver.vehicle.make, assignedDriver.vehicle.model, assignedDriver.vehicle.registration_number].filter(Boolean).join(' · ')}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
       {driverLocation && isActive ? (
         <View style={styles.mapWrap}>
           <MapView
@@ -197,6 +232,9 @@ const styles = StyleSheet.create({
   statusActive: { backgroundColor: colors.brand },
   statusDone: { backgroundColor: colors.success },
   statusText: { color: '#fff', fontSize: typography.size.lg, fontWeight: '700' },
+  driverCard: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: spacing.lg, marginBottom: spacing.lg },
+  driverTitle: { fontSize: typography.size.sm, color: colors.textMuted },
+  driverName: { fontSize: typography.size.lg, fontWeight: '700', marginTop: spacing.xs },
   mapWrap: { marginBottom: spacing.xl },
   map: { height: 240, borderRadius: 12 },
   liveText: { marginTop: spacing.sm, color: colors.textMuted, fontSize: typography.size.sm },
