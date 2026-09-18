@@ -5,11 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { ActiveTrip } from '../lib/driver-state';
 
-type Event = 'arrived' | 'start' | 'complete' | 'cancel';
+type Event = 'en-route' | 'arrived' | 'start' | 'complete' | 'cancel';
 
 interface Props {
   trip: ActiveTrip;
-  onEvent: (event: Event, reason?: string) => Promise<void>;
+  onEvent: (event: Event) => Promise<void>;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -59,7 +59,10 @@ export function ActiveTripScreen({ trip, onEvent }: Props) {
       </Pressable>
 
       <View style={styles.actions}>
-        {(trip.status === 'assigned' || trip.status === 'driver_en_route') && (
+        {trip.status === 'assigned' && (
+          <PrimaryButton label="På väg till kund" busy={busy} onPress={() => run('en-route')} />
+        )}
+        {trip.status === 'driver_en_route' && (
           <PrimaryButton label="Framme hos kund" busy={busy} onPress={() => run('arrived')} />
         )}
         {trip.status === 'arrived_at_pickup' && (
