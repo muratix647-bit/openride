@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { signOut } from '../lib/auth';
-import { fetchMyFordons, type Fordon } from '../lib/driver-state';
+import { fetchMyVehicles, type Vehicle } from '../lib/driver-state';
 
 interface Props {
   driverId: string;
@@ -16,15 +16,15 @@ interface Props {
 }
 
 export function HomeScreen({ driverId, displayName, online, onGoOnline, onGoOffline, onRapportera }: Props) {
-  const [vehicles, setFordons] = useState<Fordon[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
-    void fetchMyFordons(driverId).then((vs) => {
+    void fetchMyVehicles(driverId).then((vs) => {
       if (!active) return;
-      setFordons(vs);
+      setVehicles(vs);
       setSelected((cur) => cur ?? vs[0]?.id ?? null);
     });
     return () => {
