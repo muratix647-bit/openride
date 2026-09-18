@@ -5,7 +5,7 @@ import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 interface BookingRow {
   id: string; booking_number: number | null; status: string; customer_name: string;
-  customer_phone: string | null; pickup_address: string; dropoff_address: string;
+  customer_phone: string | null; pickup_address: string; dropoff_address: string | null;
   driver_id: string | null; fixed_price: number | null; estimated_price: number | null; created_at: string;
 }
 interface DriverRow {
@@ -31,12 +31,12 @@ export function DispatchConsole() {
   },[supabase]);
 
   useEffect(()=>{
-    void load();
+    const initialLoad=setTimeout(()=>void load(),0);
     const reload=()=>{if(timer.current)clearTimeout(timer.current);timer.current=setTimeout(()=>void load(),300)};
     const ch=supabase.channel('avenyn:dispatch');
     for(const table of ['bookings','drivers','driver_locations']) ch.on('postgres_changes',{event:'*',schema:'public',table},reload);
     ch.subscribe();
-    return()=>{if(timer.current)clearTimeout(timer.current);void supabase.removeChannel(ch)};
+    return()=>{clearTimeout(initialLoad);if(timer.current)clearTimeout(timer.current);void supabase.removeChannel(ch)};
   },[supabase,load]);
 
   const assign=useCallback(async(bookingId:string,driverId:string)=>{
