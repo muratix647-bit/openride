@@ -6,10 +6,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActiveTripScreen } from './src/screens/ActiveTripScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
-import { OfferScreen } from './src/screens/OfferScreen';
 import { PhoneAuthScreen } from './src/screens/PhoneAuthScreen';
 import { ReportIncidentScreen } from './src/screens/ReportIncidentScreen';
-import { api } from './src/lib/api';
 import { useSession } from './src/lib/auth';
 import { useDriverState } from './src/lib/driver-state';
 
@@ -51,21 +49,7 @@ function SignedIn({ session }: { session: Session }) {
     );
   }
 
-  if (state.pendingOffer) {
-    return (
-      <OfferScreen
-        offer={state.pendingOffer}
-        onAccept={async (tripId) => {
-          await api.acceptOffer(tripId);
-          await state.refresh();
-        }}
-        onDecline={async (tripId) => {
-          await api.declineOffer(tripId, 'driver declined');
-          await state.refresh();
-        }}
-      />
-    );
-  }
+
 
   return (
     <HomeScreen
