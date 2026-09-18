@@ -22,9 +22,18 @@ const STATUS_LABEL: Record<string, string> = {
 export function ActiveTripScreen({ trip, onEvent }: Props) {
   const [busy, setBusy] = useState(false);
 
-  function navigateTo(address: string): void {
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-    void Linking.openURL(url);
+  async function navigateTo(address: string): Promise<void> {
+    if (!address.trim()) {
+      Alert.alert('Adress saknas', 'Det finns ingen adress att navigera till.');
+      return;
+    }
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}&travelmode=driving`;
+    const supported = await Linking.canOpenURL(url);
+    if (!supported) {
+      Alert.alert('Navigation kunde inte öppnas', 'Kontrollera att telefonen har en kartapp eller webbläsare.');
+      return;
+    }
+    await Linking.openURL(url);
   }
 
   async function run(event: Event): Promise<void> {
@@ -54,7 +63,7 @@ export function ActiveTripScreen({ trip, onEvent }: Props) {
         {fareCents != null ? <Text style={styles.fare}>{formatMoney(fareCents)}</Text> : null}
       </View>
 
-      <Pressable style={styles.navButton} onPress={() => navigateTo(target)}>
+      <Pressable style={styles.navButton} onPress={() => void navigateTo(target)}>
         <Text style={styles.navText}>Navigera till {inProgress ? 'destination' : 'kund'}</Text>
       </Pressable>
 
