@@ -1,4 +1,4 @@
-import { colors, formatMoney, spacing, typography } from '@openride/ui';
+import { colors, spacing, typography } from '@openride/ui';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
