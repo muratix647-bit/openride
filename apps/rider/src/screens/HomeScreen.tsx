@@ -113,7 +113,7 @@ export function HomeScreen({ displayName }: { displayName?: string | null }) {
     } finally {
       setEstimating(false);
     }
-  }, [pickup, dropoff, vehicleType]);
+  }, [pickup, dropoff, vehicleType, customerName, customerPhone, customerEmail]);
 
   const onAddCard = useCallback(async () => {
     try {
