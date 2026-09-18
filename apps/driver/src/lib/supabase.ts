@@ -21,4 +21,10 @@ if (!url || !anonKey) {
 // Avenyn Taxi uses the existing production schema, which intentionally differs
 // from OpenRide's generated database types while the adaptation is in progress.
 // Runtime access remains protected by Supabase Auth + RLS.
-export const supabase: SupabaseClient<any> = createBrowserClient({ url, anonKey, storage: secureStorage }) as SupabaseClient<any>;
+type AvenynSchema = Record<string, unknown>;
+
+export const supabase = createBrowserClient({
+  url,
+  anonKey,
+  storage: secureStorage,
+}) as unknown as SupabaseClient<AvenynSchema>;
