@@ -4,6 +4,14 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 
 import { sendOtp, verifyOtp } from '../lib/auth';
 
+function normalizeSwedishPhone(value: string): string {
+  const compact = value.replace(/[\s()-]/g, '');
+  if (compact.startsWith('+')) return compact;
+  if (compact.startsWith('00')) return `+${compact.slice(2)}`;
+  if (compact.startsWith('0')) return `+46${compact.slice(1)}`;
+  return compact;
+}
+
 export function PhoneAuthScreen() {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
@@ -13,7 +21,12 @@ export function PhoneAuthScreen() {
   async function onSendOtp(): Promise<void> {
     setBusy(true);
     try {
-      await sendOtp(phone.trim());
+      const normalized = normalizeSwedishPhone(phone.trim());
+      if (!/^\+[1-9]\d{7,14}$/.test(normalized)) {
+        throw new Error('Ange ett giltigt mobilnummer, till exempel 070 123 45 67.');
+      }
+      setPhone(normalized);
+      await sendOtp(normalized);
       setStage('code');
     } catch (e) {
       Alert.alert('Kunde inte skicka koden', (e as Error).message);
@@ -25,7 +38,11 @@ export function PhoneAuthScreen() {
   async function onVerifiera(): Promise<void> {
     setBusy(true);
     try {
-      await verifyOtp(phone.trim(), code.trim());
+      const normalized = normalizeSwedishPhone(phone.trim());
+      if (!/^\d{6}$/.test(code.trim())) {
+        throw new Error('Ange den 6-siffriga koden från SMS:et.');
+      }
+      await verifyOtp(normalized, code.trim());
     } catch (e) {
       Alert.alert('Koden stämmer inte', (e as Error).message);
     } finally {
@@ -67,7 +84,7 @@ export function PhoneAuthScreen() {
             editable={!busy}
             maxLength={6}
           />
-          <Pressable style={styles.button} onPress={onVerifiera} disabled={busy || code.length < 4}>
+          <Pressable style={styles.button} onPress={onVerifiera} disabled={busy || code.length !== 6}>
             <Text style={styles.buttonText}>Verifiera</Text>
           </Pressable>
           <Pressable onPress={() => setStage('phone')} disabled={busy}>
